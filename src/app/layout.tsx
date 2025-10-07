@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import Header from "@/components/Header";
+import HeaderClient from "@/components/HeaderClient";
 import { CartProvider } from "@/contexts/CartContext";
 
 export const metadata: Metadata = {
@@ -13,11 +13,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="pt-BR">
       <body>
         <CartProvider>
-          <Header />
-          <main className="container py-8">{children}</main>
-          <footer className="border-t mt-12 py-8 text-center text-sm text-gray-600">
-            Cantina Online · {new Date().getFullYear()}
-          </footer>
+          <HeaderClient />
+          <main>{children}</main>
         </CartProvider>
       </body>
     </html>

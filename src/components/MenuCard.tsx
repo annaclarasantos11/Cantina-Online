@@ -102,15 +102,22 @@ export default function MenuCard({
     return { src: all[0], triedIdx: 0, variants: all };
   });
 
+  const [loaded, setLoaded] = useState(false);
   const imgRef = useRef<HTMLImageElement | null>(null);
 
   function handleError() {
     const nextIdx = triedIdx + 1;
     if (nextIdx < variants.length) {
       setState({ src: variants[nextIdx], triedIdx: nextIdx, variants });
+      setLoaded(false);
       return;
     }
     if (imgRef.current) imgRef.current.src = PLACEHOLDER_SVG;
+    setLoaded(true);
+  }
+
+  function handleLoad() {
+    setLoaded(true);
   }
 
   const priceText =
@@ -121,39 +128,53 @@ export default function MenuCard({
       : price;
 
   return (
-    <article className="overflow-hidden rounded-2xl border bg-white/60 ring-1 ring-black/5 shadow-sm transition hover:shadow-md dark:bg-zinc-900/60">
+    <article className="group overflow-hidden rounded-xl bg-white ring-1 ring-gray-200 shadow-sm transition-all hover:shadow-lg hover:-translate-y-0.5">
       {imageMode === "contain" ? (
-        // BEBIDAS: imagem inteira, fundo branco
-        <div className="relative h-44 sm:h-56 w-full overflow-hidden bg-white dark:bg-white flex items-center justify-center p-2">
+        // BEBIDAS: imagem inteira, fundo branco com padding
+        <div className="relative h-44 sm:h-56 w-full overflow-hidden bg-white flex items-center justify-center p-6">
+          {!loaded && <div className="absolute inset-0 skeleton" />}
           <img
             ref={imgRef}
             src={src || PLACEHOLDER_SVG}
             alt={name}
-            className="max-h-full max-w-full object-contain object-center"
+            loading="lazy"
+            className={`max-h-full max-w-full object-contain object-center transition-all duration-500 group-hover:scale-[1.03] ${
+              loaded ? 'opacity-100' : 'opacity-0'
+            }`}
             onError={handleError}
+            onLoad={handleLoad}
           />
+          {/* Overlay sutil no hover */}
+          <div className="absolute inset-0 bg-black opacity-0 group-hover:opacity-5 transition-opacity pointer-events-none" />
         </div>
       ) : (
-        // LANCHES (e padrão): mantém cover, mas com fundo branco
-        <div className="aspect-[16/9] w-full overflow-hidden bg-white dark:bg-white">
+        // LANCHES (e padrão): cover
+        <div className="relative aspect-[4/3] w-full overflow-hidden bg-white">
+          {!loaded && <div className="absolute inset-0 skeleton" />}
           <img
             ref={imgRef}
             src={src}
             alt={name}
-            className="h-full w-full object-cover object-center"
+            loading="lazy"
+            className={`h-full w-full object-cover object-center transition-all duration-500 group-hover:scale-[1.03] ${
+              loaded ? 'opacity-100' : 'opacity-0'
+            }`}
             onError={handleError}
+            onLoad={handleLoad}
           />
+          {/* Overlay sutil no hover */}
+          <div className="absolute inset-0 bg-black opacity-0 group-hover:opacity-5 transition-opacity pointer-events-none" />
         </div>
       )}
 
       <div className="p-4">
-        <h3 className="text-base font-semibold leading-tight">{name}</h3>
+        <h3 className="text-base font-semibold leading-tight text-gray-900">{name}</h3>
         {description ? (
-          <p className="mt-1 text-sm text-gray-600 dark:text-zinc-400 line-clamp-2">
+          <p className="mt-1 text-sm text-gray-600 line-clamp-2">
             {description}
           </p>
         ) : null}
-        <p className="mt-2 text-sm font-bold">{priceText}</p>
+        <p className="mt-2 text-sm font-bold text-gray-900">{priceText}</p>
       </div>
     </article>
   );

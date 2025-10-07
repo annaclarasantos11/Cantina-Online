@@ -41,7 +41,7 @@ export default function CheckoutPage() {
 
   if (orderId) {
     return (
-      <div className="max-w-xl mx-auto text-center space-y-4">
+      <div className="container py-8 max-w-xl mx-auto text-center space-y-4">
         <h1 className="text-2xl font-bold">Pedido confirmado!</h1>
         <p>Anote o número do seu pedido:</p>
         <div className="text-4xl font-extrabold text-sky-700">{orderId}</div>
@@ -51,7 +51,7 @@ export default function CheckoutPage() {
   }
 
   return (
-    <div className="grid md:grid-cols-2 gap-10">
+    <div className="container py-8 grid md:grid-cols-2 gap-10">
       <div>
         <h1 className="text-2xl font-bold mb-4">Resumo</h1>
         <div className="space-y-3">

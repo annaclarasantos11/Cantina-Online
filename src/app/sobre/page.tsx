@@ -1,6 +1,6 @@
 export default function SobrePage() {
   return (
-    <section>
+    <section className="container py-8">
       <h1 className="text-3xl font-bold mb-4">Regras de Funcionamento</h1>
 
       <div className="rounded-2xl border bg-white p-6 shadow-sm space-y-6">

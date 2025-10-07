@@ -20,7 +20,7 @@ export default function Header() {
   const [open, setOpen] = useState(false);
 
   return (
-    <header className="border-b bg-white sticky top-0 z-40">
+    <header className="sticky top-0 z-50 glass border-b border-gray-200/80">
       <div className="container flex h-16 items-center justify-between">
         <Link href="/" className="font-semibold text-xl">
           Cantina<span className="text-sky-600">Online</span>

@@ -18,95 +18,100 @@ export default function SplashIntro() {
   }, [auto, router]);
 
   return (
-    <section className="relative min-h-[84vh] overflow-hidden">
-      <div className="absolute inset-0 -z-10 bg-gradient-to-b from-brand-50 to-white" />
-      <div className="absolute -top-24 -right-24 w-[40rem] h-[40rem] rounded-full bg-brand-100 blur-3xl opacity-50" />
+    <section className="relative min-h-[100svh] overflow-hidden bg-landing">
+      {/* Elementos flutuantes - visíveis apenas em telas médias+ */}
+      <img
+        src="/images/products/croissant-chocolate.png"
+        alt=""
+        className="hidden md:block absolute top-20 right-[10%] w-32 lg:w-40 animate-float pointer-events-none opacity-90"
+        style={{ animationDelay: "0s" }}
+        aria-hidden="true"
+      />
+      <img
+        src="/images/products/folheado-pizza.png"
+        alt=""
+        className="hidden md:block absolute bottom-32 left-[8%] w-28 lg:w-36 animate-float pointer-events-none opacity-85"
+        style={{ animationDelay: "2s" }}
+        aria-hidden="true"
+      />
+      <img
+        src="/images/products/h2o.png"
+        alt=""
+        className="hidden lg:block absolute top-1/2 left-[15%] w-20 animate-float pointer-events-none opacity-80"
+        style={{ animationDelay: "1s" }}
+        aria-hidden="true"
+      />
 
-      <header className="container pt-10 flex items-center justify-between">
+      {/* Header inline (não usa o Header.tsx para manter isolado) */}
+      <header className="container pt-10 flex items-center justify-between relative z-10">
         <Link href="/" className="font-bold text-xl">
           <span className="text-gray-900">Cantina</span>
-          <span className="text-brand-700">Online</span>
+          <span className="text-sky-600">Online</span>
         </Link>
         <Link href="/menu" className="btn btn-outline">
           Ver Menu
         </Link>
       </header>
 
-      <div className="container grid lg:grid-cols-2 gap-10 items-center py-16">
-        <div className="fade-in">
-          <h1 className="text-5xl lg:text-6xl font-extrabold tracking-tight">
-            Cantina sem fila, <span className="text-brand-700">do seu jeito.</span>
+      {/* Hero Section */}
+      <div className="container relative z-10 flex flex-col items-center justify-center min-h-[calc(100svh-200px)] text-center py-16">
+        <div className="max-w-3xl space-y-6">
+          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight leading-tight">
+            Cantina sem fila,{" "}
+            <span className="text-sky-600">do seu jeito</span>
           </h1>
-          <p className="mt-4 text-lg text-gray-600 max-w-xl">
-            Faça o pedido no site, escolha o horário e retire sem estresse. Rápido para quem compra, organizado para quem vende.
+          <p className="text-lg sm:text-xl text-gray-600 max-w-2xl mx-auto">
+            Faça seu pedido online, retire no horário escolhido e economize tempo. 
+            Sem filas, sem estresse.
           </p>
 
-          <div className="mt-8 flex flex-wrap gap-3">
-            <button onClick={() => router.push('/menu')} className="btn btn-primary px-5 py-3">
-              Ver Menu
+          {/* CTAs */}
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
+            <button 
+              onClick={() => router.push('/menu')} 
+              className="btn btn-primary px-6 py-3 text-lg w-full sm:w-auto"
+            >
+              Entrar no cardápio
             </button>
-            <a href="#como-funciona" className="btn btn-outline px-5 py-3">
-              Como funciona
-            </a>
-            <label className="ml-2 inline-flex items-center gap-2 text-sm text-gray-500 select-none">
-              <input
-                type="checkbox"
-                checked={!auto}
-                onChange={(e) => setAuto(!e.target.checked)}
-                className="rounded border-gray-300"
-                aria-label="Desativar redirecionamento automático"
-              />
-              Não redirecionar automaticamente
-            </label>
+            <Link 
+              href="/sobre" 
+              className="btn btn-outline px-6 py-3 text-lg w-full sm:w-auto"
+            >
+              Regras & horários
+            </Link>
           </div>
 
-          <div className="mt-10 grid grid-cols-2 sm:grid-cols-4 gap-3">
-            {[
-              "Pagamento na retirada",
-              "Horário agendado",
-              "Pedidos organizados",
-              "Menos tempo na fila",
-            ].map((t) => (
-              <div key={t} className="rounded-2xl border bg-white/70 backdrop-blur px-4 py-3 text-sm shadow-card">
-                • {t}
-              </div>
-            ))}
-          </div>
+          {/* Botão "Não redirecionar" */}
+          {auto && (
+            <button
+              onClick={() => setAuto(false)}
+              className="btn btn-outline text-sm mt-4"
+            >
+              Não redirecionar
+            </button>
+          )}
         </div>
 
-        <div className="relative fade-in">
-          <div className="aspect-[4/3] w-full rounded-2xl border bg-white shadow-card overflow-hidden">
-            <div className="h-full w-full grid place-content-center text-center p-10">
-              <div className="text-2xl font-semibold">Preview do Menu</div>
-              <p className="text-gray-500 mt-2">Alguns itens da vitrine aparecem aqui.</p>
-              <div className="mt-6 grid grid-cols-3 gap-3 opacity-90">
-                {Array.from({ length: 6 }).map((_, i) => (
-                  <div key={i} className="h-24 rounded-xl bg-gray-100" />
-                ))}
-              </div>
-            </div>
-          </div>
-          <div className="absolute -z-10 -bottom-8 -left-8 w-56 h-56 rounded-full bg-brand-200 blur-2xl opacity-40" />
-        </div>
-      </div>
-
-      <div id="como-funciona" className="container pb-20">
-        <h2 className="text-2xl font-bold mb-6">Como funciona</h2>
-        <div className="grid sm:grid-cols-3 gap-4">
+        {/* Features cards */}
+        <div className="mt-16 grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-4xl w-full">
           {[
-            { t: "Escolha no menu", d: "Veja lanches e bebidas com preço e foto." },
-            { t: "Agende a retirada", d: "Selecione o intervalo/horário disponível." },
-            { t: "Pague no balcão", d: "Leve o ticket e confirme seu pedido." },
-          ].map((s) => (
-            <div key={s.t} className="card">
-              <div className="text-lg font-semibold">{s.t}</div>
-              <p className="text-gray-600 mt-1">{s.d}</p>
+            { title: "Sem filas", desc: "Peça online e retire pronto" },
+            { title: "Escolha o horário", desc: "Agende quando for retirar" },
+            { title: "Pague no local", desc: "Confirme na cantina" },
+          ].map((item) => (
+            <div 
+              key={item.title}
+              className="rounded-2xl border border-gray-200 bg-white/80 backdrop-blur-sm p-6 shadow-sm hover:shadow-md transition-shadow"
+            >
+              <h3 className="font-semibold text-lg text-gray-900">{item.title}</h3>
+              <p className="text-gray-600 text-sm mt-1">{item.desc}</p>
             </div>
           ))}
         </div>
       </div>
 
-      <footer className="border-t py-8 text-center text-sm text-gray-600">
+      {/* Footer inline */}
+      <footer className="relative z-10 border-t border-gray-200/50 py-6 text-center text-sm text-gray-600">
         Cantina Online · {new Date().getFullYear()}
       </footer>
     </section>

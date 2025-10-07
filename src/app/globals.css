@@ -30,7 +30,72 @@ body {
   @apply border border-gray-300 hover:bg-gray-50;
 }
 
-/* small fade-in utility used on the landing */
+/* --- LANDING BACKGROUND & EFFECTS --- */
+
+.bg-landing {
+  position: relative;
+  background:
+    radial-gradient(1200px circle at 10% 10%, rgba(14,165,233,.12), transparent 60%),
+    radial-gradient(800px circle at 80% 20%, rgba(99,102,241,.10), transparent 55%),
+    linear-gradient(180deg, #fff 0%, #f8fafc 100%);
+}
+
+/* grade sutil por cima, só no topo (mask) */
+.bg-landing::after {
+  content: "";
+  position: absolute; inset: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(transparent 0, rgba(0,0,0,.025) 1px),
+    linear-gradient(90deg, transparent 0, rgba(0,0,0,.025) 1px);
+  background-size: 24px 24px, 24px 24px;
+  -webkit-mask-image: radial-gradient(1000px circle at 50% -10%, #000 60%, transparent 70%);
+          mask-image: radial-gradient(1000px circle at 50% -10%, #000 60%, transparent 70%);
+}
+
+/* vidro para header */
+.glass {
+  background: rgba(255,255,255,.7);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+/* skeleton shimmer */
+.skeleton {
+  position: relative;
+  overflow: hidden;
+  background: #f3f4f6; /* gray-100 */
+}
+.skeleton::after {
+  content: "";
+  position: absolute; inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,.6), transparent);
+  animation: shine 1.2s linear infinite;
+}
+@keyframes shine {
+  to { transform: translateX(100%); }
+}
+
+/* animações utilitárias */
+@keyframes float {
+  0%   { transform: translateY(0) }
+  50%  { transform: translateY(-8px) }
+  100% { transform: translateY(0) }
+}
+.animate-float { animation: float 6s ease-in-out infinite; }
+
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-up {
+  opacity: 0;
+  animation: fade-up .6s ease forwards;
+  animation-delay: var(--delay, 0ms);
+}
+
+/* small fade-in utility used on the landing (legacy) */
 .fade-in { animation: fade-in .6s ease both; }
 @keyframes fade-in {
   from { opacity: 0; transform: translateY(6px); }

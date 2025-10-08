@@ -101,3 +101,16 @@ body {
   from { opacity: 0; transform: translateY(6px); }
   to   { opacity: 1; transform: none; }
 }
+
+/* foco visível consistente */
+:where(a, button, [role="button"], input, select, textarea):focus-visible {
+  outline: 2px solid theme('colors.sky.600');
+  outline-offset: 2px;
+}
+
+/* animação do badge do carrinho */
+@keyframes pop {
+  0%   { transform: scale(.85); }
+  60%  { transform: scale(1.15); }
+  100% { transform: scale(1); }
+}

@@ -114,3 +114,14 @@ body {
   60%  { transform: scale(1.15); }
   100% { transform: scale(1); }
 }
+
+@media print {
+  header,
+  .glass {
+    display: none !important;
+  }
+
+  body {
+    background: #fff !important;
+  }
+}

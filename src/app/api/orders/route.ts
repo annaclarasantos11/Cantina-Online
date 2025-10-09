@@ -1,4 +1,5 @@
 import { db } from "@/lib/prisma";
+import type { Prisma } from "@prisma/client";
 import { NextResponse } from "next/server";
 
 type Body = {
@@ -21,7 +22,11 @@ export async function POST(req: Request) {
   }
 
   try {
-    const result = await db.$transaction(async (tx) => {
+    const runTransaction = db.$transaction.bind(db) as unknown as <T>(
+      fn: (tx: Prisma.TransactionClient) => Promise<T>
+    ) => Promise<T>;
+
+    const result = (await runTransaction(async (tx: Prisma.TransactionClient) => {
       // Check stock
       for (const it of body.items) {
         const p = await tx.product.findUnique({ where: { id: it.productId } });
@@ -55,7 +60,7 @@ export async function POST(req: Request) {
       }
 
       return order.id;
-    });
+  })) as number;
 
     return NextResponse.json({ orderId: result });
   } catch (e: any) {

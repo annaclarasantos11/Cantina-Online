@@ -2,10 +2,11 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { ShoppingCart, Menu, X } from 'lucide-react';
+import { ShoppingCart, Menu, X, LogOut } from 'lucide-react';
 import { useCart } from '@/contexts/CartContext';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { CartDrawer } from '@/components/cart/CartDrawer';
+import { useAuth } from '@/contexts/AuthContext';
 import type { Route } from 'next';
 
 const nav: Array<{ href: Route; label: string }> = [
@@ -18,8 +19,11 @@ const nav: Array<{ href: Route; label: string }> = [
 export default function Header() {
   const pathname = usePathname();
   const { count } = useCart();
+  const { user, signOut, initializing } = useAuth();
   const [openCart, setOpenCart] = useState(false);
   const [openMobile, setOpenMobile] = useState(false);
+  const [openUserMenu, setOpenUserMenu] = useState(false);
+  const userMenuRef = useRef<HTMLDivElement | null>(null);
 
   const [pop, setPop] = useState(false);
   const [prevCount, setPrevCount] = useState(count);
@@ -32,7 +36,34 @@ export default function Header() {
     }
   }, [count, prevCount]);
 
+  useEffect(() => {
+    if (!openUserMenu) return;
+    function onClick(event: MouseEvent) {
+      if (!userMenuRef.current?.contains(event.target as Node)) {
+        setOpenUserMenu(false);
+      }
+    }
+    window.addEventListener('mousedown', onClick);
+    return () => window.removeEventListener('mousedown', onClick);
+  }, [openUserMenu]);
+
+  useEffect(() => {
+    setOpenUserMenu(false);
+    setOpenMobile(false);
+  }, [pathname]);
+
   const isActive = (href: string) => pathname === href;
+
+  const userInitial = useMemo(() => {
+    if (!user) return '?';
+    const source = user.name?.trim() || user.email;
+    return source ? source.charAt(0).toUpperCase() : '?';
+  }, [user]);
+
+  const userDisplayName = useMemo(() => {
+    if (!user) return '';
+    return user.name?.trim() || user.email;
+  }, [user]);
 
   const brand = useMemo(
     () => (
@@ -72,12 +103,54 @@ export default function Header() {
           </nav>
 
           <div className="flex items-center gap-2">
-            <Link
-              href={{ pathname: '/auth/login' }}
-              className="hidden sm:inline-flex btn btn-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-sky-600"
-            >
-              Entrar
-            </Link>
+            {!initializing && user ? (
+              <div className="relative" ref={userMenuRef}>
+                <button
+                  type="button"
+                  onClick={() => setOpenUserMenu((v) => !v)}
+                  className="flex items-center gap-2 rounded-full border border-gray-300 bg-white pl-1 pr-3 py-1.5 text-sm text-gray-800 shadow-sm transition hover:border-sky-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-sky-600"
+                  aria-haspopup="menu"
+                  aria-expanded={openUserMenu}
+                >
+                  <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-sky-600 text-sm font-semibold text-white">
+                    {userInitial}
+                  </span>
+                  <span className="hidden sm:inline max-w-[8rem] truncate text-left font-medium">{userDisplayName}</span>
+                </button>
+
+                {openUserMenu && (
+                  <div
+                    role="menu"
+                    className="absolute right-0 mt-2 w-56 rounded-lg border border-gray-200 bg-white py-2 shadow-lg"
+                  >
+                    <div className="px-4 pb-3 text-sm text-gray-700">
+                      <p className="font-semibold truncate" title={userDisplayName}>{userDisplayName}</p>
+                      <p className="mt-0.5 truncate text-xs text-gray-500" title={user.email}>{user.email}</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setOpenUserMenu(false);
+                        signOut();
+                      }}
+                      className="flex w-full items-center gap-2 px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50"
+                    >
+                      <LogOut className="h-4 w-4" />
+                      Sair
+                    </button>
+                  </div>
+                )}
+              </div>
+            ) : initializing ? (
+              <div className="hidden h-10 w-24 animate-pulse rounded-full bg-gray-200 sm:inline-block" aria-hidden="true" />
+            ) : (
+              <Link
+                href={{ pathname: '/auth/login' }}
+                className="hidden sm:inline-flex btn btn-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-sky-600"
+              >
+                Entrar
+              </Link>
+            )}
 
             <button
               onClick={() => setOpenCart(true)}
@@ -138,15 +211,39 @@ export default function Header() {
                   </li>
                 );
               })}
-              <li className="mt-1">
-                <Link
-                  href={{ pathname: '/auth/login' }}
-                  onClick={() => setOpenMobile(false)}
-                  className="block rounded-md px-3 py-2 text-sm text-white bg-sky-600 hover:bg-sky-700"
-                >
-                  Entrar
-                </Link>
-              </li>
+              {user ? (
+                <li className="mt-2 border-t border-gray-200 pt-3">
+                  <div className="flex items-center gap-3 px-3 pb-2">
+                    <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-sky-600 text-sm font-semibold text-white">
+                      {userInitial}
+                    </span>
+                    <div className="text-sm">
+                      <p className="font-semibold text-gray-800">{userDisplayName}</p>
+                      <p className="text-xs text-gray-500">{user.email}</p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setOpenMobile(false);
+                      signOut();
+                    }}
+                    className="mt-1 w-full rounded-md px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50"
+                  >
+                    Sair
+                  </button>
+                </li>
+              ) : (
+                <li className="mt-1">
+                  <Link
+                    href={{ pathname: '/auth/login' }}
+                    onClick={() => setOpenMobile(false)}
+                    className="block rounded-md px-3 py-2 text-sm text-white bg-sky-600 hover:bg-sky-700"
+                  >
+                    Entrar
+                  </Link>
+                </li>
+              )}
             </ul>
           </nav>
         </div>

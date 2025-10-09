@@ -35,7 +35,7 @@ export default function CadastroClient() {
     const e: typeof errors = {};
     if (name.trim().length < 2) e.name = "Informe seu nome completo.";
     if (!validateEmail(email.trim())) e.email = "Informe um e-mail válido.";
-    if (pass.trim().length < 6) e.pass = "A senha deve ter pelo menos 6 caracteres.";
+  if (pass.trim().length < 8) e.pass = "A senha deve ter pelo menos 8 caracteres.";
     if (confirm !== pass) e.confirm = "As senhas não conferem.";
     if (!agree) e.agree = "Você precisa aceitar os termos para continuar.";
     setErrors(e);
@@ -150,7 +150,7 @@ export default function CadastroClient() {
                     className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 pr-10 text-sm outline-none focus:border-sky-500"
                     aria-invalid={!!errors.pass}
                     aria-describedby={errors.pass ? "pass-err" : undefined}
-                    placeholder="Mínimo de 6 caracteres"
+                    placeholder="Mínimo de 8 caracteres"
                   />
                   <button
                     type="button"

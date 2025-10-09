@@ -2,25 +2,30 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 
 function validateEmail(v: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
 }
 
 export default function LoginClient() {
+  const router = useRouter();
+  const { signIn } = useAuth();
   const [email, setEmail] = useState("");
   const [pass, setPass] = useState("");
   const [show, setShow] = useState(false);
   const [remember, setRemember] = useState(true);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<{ email?: string; pass?: string }>({});
+  const [formError, setFormError] = useState<string | null>(null);
   const alertRef = useRef<HTMLDivElement | null>(null);
 
   function validate() {
     const e: typeof errors = {};
     if (!validateEmail(email.trim())) e.email = "Informe um e-mail válido.";
-    if (pass.trim().length < 6) e.pass = "A senha deve ter pelo menos 6 caracteres.";
+  if (pass.trim().length < 8) e.pass = "A senha deve ter pelo menos 8 caracteres.";
     setErrors(e);
     return Object.keys(e).length === 0;
   }
@@ -32,13 +37,24 @@ export default function LoginClient() {
       return;
     }
     setLoading(true);
-    await new Promise((r) => setTimeout(r, 900));
+    setFormError(null);
+    const result = await signIn({ email: email.trim(), password: pass, remember });
     setLoading(false);
-    console.log({ email, remember });
+    if (!result.ok) {
+      setFormError(result.message ?? "Falha ao entrar.");
+      alertRef.current?.focus();
+      return;
+    }
+
+    setEmail("");
+    setPass("");
+    router.push("/");
+    router.refresh();
   }
 
   useEffect(() => {
     setErrors({});
+    setFormError(null);
   }, [email, pass]);
 
   return (
@@ -57,10 +73,16 @@ export default function LoginClient() {
             aria-live="assertive"
             aria-atomic="true"
           >
-            {Object.values(errors)
+            {[formError, ...Object.values(errors)]
               .filter(Boolean)
               .join(". ")}
           </div>
+
+          {formError && (
+            <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+              {formError}
+            </div>
+          )}
 
           <form onSubmit={onSubmit} className="space-y-4">
             <div>

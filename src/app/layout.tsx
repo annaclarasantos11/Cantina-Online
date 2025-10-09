@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import HeaderClient from "@/components/HeaderClient";
 import { CartProvider } from "@/contexts/CartContext";
+import { AuthProvider } from "@/contexts/AuthContext";
 
 export const metadata: Metadata = {
   title: "Cantina Online",
@@ -12,10 +13,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="pt-BR">
       <body>
-        <CartProvider>
-          <HeaderClient />
-          <main>{children}</main>
-        </CartProvider>
+        <AuthProvider>
+          <CartProvider>
+            <HeaderClient />
+            <main>{children}</main>
+          </CartProvider>
+        </AuthProvider>
       </body>
     </html>
   );

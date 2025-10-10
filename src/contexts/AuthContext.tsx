@@ -40,9 +40,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const persistMode = useRef<PersistMode | null>(null);
   const accessTokenRef = useRef<string | null>(null);
+  const userRef = useRef<AuthUser | null>(null);
   const apiBase = useMemo(() => getApiBaseUrl(), []);
 
   useEffect(() => { accessTokenRef.current = accessToken; }, [accessToken]);
+
+  useEffect(() => { userRef.current = user; }, [user]);
 
   const persistAuth = useCallback((data: StoredAuth, mode?: PersistMode) => {
     const persist = mode ?? persistMode.current ?? "session";
@@ -51,22 +54,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const refreshToken = useCallback(async () => {
-    const res = await fetch(`/auth/refresh`, { method: "POST", credentials: "include", cache: "no-store" });
+    const res = await fetch(`${apiBase}/auth/refresh`, { method: "POST", credentials: "include", cache: "no-store" });
     if (!res.ok) { setUser(null); setAccessToken(null); clearStored(); throw new Error("refresh failed"); }
     const data = (await res.json()) as { accessToken: string };
     setAccessToken(data.accessToken);
-    if (user) persistAuth({ user, accessToken: data.accessToken });
+    const u = userRef.current;
+    if (u) persistAuth({ user: u, accessToken: data.accessToken });
     return data.accessToken;
-  }, [persistAuth, user]);
+  }, [apiBase, persistAuth]);
 
   const safeRefreshProfile = useCallback(async (token?: string, overridePersist?: PersistMode) => {
     const current = token ?? accessTokenRef.current;
     if (!current) return;
-    let res = await fetch(`/auth/me`, { headers: { Authorization: `Bearer ${current}` }, credentials: "include", cache: "no-store" });
+    let res = await fetch(`${apiBase}/auth/me`, { headers: { Authorization: `Bearer ${current}` }, credentials: "include", cache: "no-store" });
     if (res.status === 401) {
       try {
         const nt = await refreshToken();
-        res = await fetch(`/auth/me`, { headers: { Authorization: `Bearer ${nt}` }, credentials: "include", cache: "no-store" });
+        res = await fetch(`${apiBase}/auth/me`, { headers: { Authorization: `Bearer ${nt}` }, credentials: "include", cache: "no-store" });
       } catch { return; }
     }
     if (!res.ok) return;
@@ -94,7 +98,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signIn = useCallback(async ({ email, password, remember }: SignInInput): Promise<SignInResult> => {
     const attempt = (url: string) => fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, credentials: "include", body: JSON.stringify({ email, password }) });
-    const urls = ["/auth/login", `${apiBase}/auth/login`];
+    const urls = [`${apiBase}/auth/login`, "/auth/login"];
     for (const url of urls) {
       try {
         const res = await attempt(url);
@@ -105,7 +109,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (!token) { try { token = await refreshToken(); } catch {} }
         if (!nextUser && token) {
           try {
-            const me = await fetch(`/auth/me`, { headers: { Authorization: `Bearer ${token}` }, credentials: "include", cache: "no-store" });
+            const me = await fetch(`${apiBase}/auth/me`, { headers: { Authorization: `Bearer ${token}` }, credentials: "include", cache: "no-store" });
             if (me.ok) { const meJson = await me.json().catch(() => ({})); nextUser = meJson?.user ?? null; }
           } catch {}
         }
@@ -124,7 +128,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [apiBase, persistAuth, refreshToken]);
 
   const signOut = useCallback(async () => {
-    try { await fetch(`/auth/logout`, { method: "POST", credentials: "include" }); } catch {}
+    try { await fetch(`${apiBase}/auth/logout`, { method: "POST", credentials: "include" }); } catch {}
     setUser(null); setAccessToken(null); accessTokenRef.current = null; persistMode.current = null; clearStored();
   }, []);
 

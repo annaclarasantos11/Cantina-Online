@@ -9,11 +9,9 @@ import { authRoutes } from "./routes/auth";
 
 const app = express();
 
+const origins = (env.CORS_ORIGIN || "").split(",").map(s => s.trim()).filter(Boolean);
 app.use(
-  cors({
-    origin: env.CORS_ORIGIN,
-    credentials: true,
-  })
+  cors({ origin: origins.length ? origins : ["http://localhost:3000", "http://127.0.0.1:3000"], credentials: true })
 );
 app.use(express.json());
 app.use(cookieParser());

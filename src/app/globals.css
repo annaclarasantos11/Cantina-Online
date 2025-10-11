@@ -4,30 +4,105 @@
 
 :root {
   --brand: #f97316;
+  --brand-50: #fff7ed;
+  --brand-100: #ffedd5;
+  --brand-200: #fed7aa;
+  --brand-500: #f97316;
+  --brand-600: #ea580c;
+  --brand-700: #c2410c;
+  --page-dark: #0f172a;
+  --page-light: #fff7ed;
 }
 
-html, body {
+html,
+body {
   height: 100%;
 }
 
 body {
-  @apply bg-white text-gray-900 antialiased;
+  font-family: var(--font-sans), "Plus Jakarta Sans", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-feature-settings: "liga", "kern";
+  scroll-behavior: smooth;
+}
+
+body.bg-cantina {
+  position: relative;
+  color: #0f1729;
+  background:
+    radial-gradient(1000px circle at 10% 10%, rgba(255, 180, 107, 0.28), transparent 60%),
+    radial-gradient(1200px circle at 90% 0%, rgba(253, 186, 116, 0.2), transparent 65%),
+    linear-gradient(180deg, #fffdf9 0%, #fff7ed 35%, #fff 100%);
+  background-attachment: fixed;
+}
+
+body.bg-cantina::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(600px circle at 20% 70%, rgba(248, 113, 113, 0.08), transparent 55%),
+    radial-gradient(500px circle at 80% 80%, rgba(248, 250, 252, 0.9), transparent 60%);
+  mix-blend-mode: multiply;
+  opacity: 0.7;
+  z-index: 0;
+}
+
+main {
+  position: relative;
+  z-index: 1;
 }
 
 .container {
-  @apply max-w-6xl mx-auto px-4;
+  @apply mx-auto max-w-6xl px-4;
 }
 
 .btn {
-  @apply inline-flex items-center justify-center rounded-2xl px-4 py-2 font-medium shadow-sm transition;
+  @apply inline-flex items-center justify-center rounded-2xl px-4 py-2 font-semibold transition;
+  box-shadow: 0 18px 30px -18px rgba(234, 88, 12, 0.55);
 }
 
 .btn-primary {
-  @apply bg-orange-600 text-white hover:bg-orange-700;
+  background-image: linear-gradient(135deg, var(--brand-500), var(--brand-600));
+  color: #fff;
+  box-shadow: 0 22px 35px -18px rgba(249, 115, 22, 0.65);
+}
+
+.btn-primary:hover {
+  background-image: linear-gradient(135deg, var(--brand-600), var(--brand-700));
 }
 
 .btn-outline {
-  @apply border border-gray-300 hover:bg-gray-50;
+  @apply border border-orange-200 text-orange-700;
+  background: rgba(255, 255, 255, 0.75);
+  box-shadow: inset 0 0 0 1px rgba(249, 115, 22, 0.15), 0 14px 24px -18px rgba(17, 24, 39, 0.2);
+}
+
+.btn-outline:hover {
+  background: rgba(255, 255, 255, 0.95);
+  box-shadow: inset 0 0 0 1px rgba(249, 115, 22, 0.25), 0 16px 28px -16px rgba(249, 115, 22, 0.35);
+}
+
+.btn:focus-visible {
+  box-shadow: 0 0 0 4px rgba(249, 115, 22, 0.2), 0 18px 30px -18px rgba(234, 88, 12, 0.55);
+}
+
+::selection {
+  background: rgba(249, 115, 22, 0.18);
+  color: var(--page-dark);
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--font-serif), "Cormorant Garamond", Georgia, serif;
+  letter-spacing: -0.02em;
+  color: #1f2937;
+}
+
+.display-title {
+  font-family: var(--font-serif), "Cormorant Garamond", Georgia, serif;
+  letter-spacing: -0.02em;
 }
 
 /* --- LANDING BACKGROUND & EFFECTS --- */
@@ -58,6 +133,8 @@ body {
   background: rgba(255,255,255,.7);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 179, 102, 0.22);
+  box-shadow: 0 20px 30px -24px rgba(17, 24, 39, 0.5);
 }
 
 /* skeleton shimmer */

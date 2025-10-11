@@ -22,47 +22,60 @@ export async function POST(req: Request) {
   }
 
   try {
-    const runTransaction = db.$transaction.bind(db) as unknown as <T>(
-      fn: (tx: Prisma.TransactionClient) => Promise<T>
-    ) => Promise<T>;
+    const aggregated = new Map<number, number>();
+    for (const item of body.items) {
+      aggregated.set(item.productId, (aggregated.get(item.productId) ?? 0) + item.quantity);
+    }
 
-    const result = (await runTransaction(async (tx: Prisma.TransactionClient) => {
-      // Check stock
-      for (const it of body.items) {
-        const p = await tx.product.findUnique({ where: { id: it.productId } });
-        if (!p) throw new Error(`Produto ${it.productId} não encontrado`);
-        if (p.stock < it.quantity) throw new Error(`Estoque insuficiente para ${p.name}`);
+    const result = await db.$transaction(async (tx: Prisma.TransactionClient) => {
+      const ids = Array.from(aggregated.keys());
+      const products = await tx.product.findMany({ where: { id: { in: ids } } });
+
+      if (products.length !== ids.length) {
+        const missing = ids.filter((id) => !products.some((p) => p.id === id));
+        throw new Error(`Produto(s) não encontrados: ${missing.join(", ")}`);
       }
 
-      // Create order
+      for (const product of products) {
+        const requestedQty = aggregated.get(product.id) ?? 0;
+        if (product.stock < requestedQty) {
+          throw new Error(`Estoque insuficiente para ${product.name}`);
+        }
+      }
+
       const order = await tx.order.create({
         data: {
           name: body.name,
           note: body.note ?? null,
+          items: {
+            create: products.map((product) => ({
+              productId: product.id,
+              quantity: aggregated.get(product.id) ?? 0,
+              price: product.price,
+            })),
+          },
         },
       });
 
-      // Items and stock decrement
-      for (const it of body.items) {
-        const p = await tx.product.findUniqueOrThrow({ where: { id: it.productId } });
-        await tx.orderItem.create({
-          data: {
-            orderId: order.id,
-            productId: p.id,
-            quantity: it.quantity,
-            price: p.price,
-          },
-        });
-        await tx.product.update({
-          where: { id: p.id },
-          data: { stock: p.stock - it.quantity },
-        });
-      }
+      await Promise.all(
+        products.map((product) =>
+          tx.product.update({
+            where: { id: product.id },
+            data: {
+              stock: {
+                decrement: aggregated.get(product.id) ?? 0,
+              },
+            },
+          })
+        )
+      );
 
-      return order.id;
-  })) as number;
+      const totalOrders = await tx.order.count();
 
-    return NextResponse.json({ orderId: result });
+      return { id: order.id, number: totalOrders };
+    });
+
+    return NextResponse.json({ orderId: result.id, orderNumber: result.number });
   } catch (e: any) {
     return NextResponse.json({ error: e.message ?? 'Erro ao criar pedido' }, { status: 400 });
   }

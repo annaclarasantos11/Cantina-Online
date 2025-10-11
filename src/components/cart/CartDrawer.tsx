@@ -117,6 +117,13 @@ export function CartDrawer({
                       <div className="text-xs text-gray-600">
                         {formatBRL(it.price)} <span className="text-gray-400">/ un.</span>
                       </div>
+                      {typeof it.maxQuantity === 'number' ? (
+                        <div className="text-[11px] text-gray-500 mt-0.5">
+                          {it.maxQuantity > 0
+                            ? `Disponíveis: ${Math.max(it.maxQuantity - it.quantity, 0)} de ${it.maxQuantity}`
+                            : 'Sem estoque no momento'}
+                        </div>
+                      ) : null}
                     </div>
                     <button
                       onClick={() => removeItem(it.productId)}
@@ -144,7 +151,13 @@ export function CartDrawer({
                       <button
                         type="button"
                         onClick={() => increment(it.productId)}
-                        className="grid h-8 w-8 place-items-center rounded-r-full hover:bg-gray-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-orange-600"
+                        disabled={typeof it.maxQuantity === 'number' && it.quantity >= it.maxQuantity}
+                        aria-disabled={typeof it.maxQuantity === 'number' && it.quantity >= it.maxQuantity}
+                        className={`grid h-8 w-8 place-items-center rounded-r-full focus-visible:outline focus-visible:outline-2 focus-visible:outline-orange-600 ${
+                          typeof it.maxQuantity === 'number' && it.quantity >= it.maxQuantity
+                            ? 'cursor-not-allowed opacity-40'
+                            : 'hover:bg-gray-50'
+                        }`}
                         aria-label={`Aumentar ${it.name}`}
                       >
                         <Plus className="h-4 w-4" />

@@ -16,7 +16,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <AuthProvider>
           <CartProvider>
             <HeaderClient />
-            <main>{children}</main>
+            <main className="mx-auto max-w-7xl px-4">{children}</main>
           </CartProvider>
         </AuthProvider>
       </body>

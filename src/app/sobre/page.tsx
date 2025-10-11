@@ -14,7 +14,7 @@ export default function SobrePage() {
   }).format(new Date());
 
   return (
-    <section className="bg-gradient-to-b from-white to-sky-50/30">
+    <section className="bg-gradient-to-b from-white to-orange-50/30">
       <div className="container mx-auto max-w-5xl px-6 py-10">
         <header className="mb-6 flex flex-wrap items-start justify-between gap-3">
           <div>
@@ -37,10 +37,10 @@ export default function SobrePage() {
           <div className="grid gap-8 md:grid-cols-2">
             <section>
               <h2 className="mb-2 flex items-center gap-2 text-lg font-semibold">
-                <ListChecks className="h-5 w-5 text-sky-600" />
+                <ListChecks className="h-5 w-5 text-orange-600" />
                 Pedidos
               </h2>
-              <ul className="list-disc space-y-2 pl-5 text-gray-800 marker:text-sky-600">
+              <ul className="list-disc space-y-2 pl-5 text-gray-800 marker:text-orange-600">
                 <li>Os pedidos são feitos pelo site e confirmados na área “Meus pedidos”.</li>
                 <li>Ao finalizar, seu pedido gerará um ticket com um código único para a retirada.</li>
                 <li>Cada pedido deve ser associado a um intervalo/horário de retirada disponível.</li>
@@ -54,10 +54,10 @@ export default function SobrePage() {
 
             <section>
               <h2 className="mb-2 flex items-center gap-2 text-lg font-semibold">
-                <CreditCard className="h-5 w-5 text-sky-600" />
+                <CreditCard className="h-5 w-5 text-orange-600" />
                 Pagamentos
               </h2>
-              <ul className="list-disc space-y-2 pl-5 text-gray-800 marker:text-sky-600">
+              <ul className="list-disc space-y-2 pl-5 text-gray-800 marker:text-orange-600">
                 <li>Pagamento efetuado no momento da retirada.</li>
                 <li>
                   Formas aceitas: dinheiro, <span className="font-semibold">PPA</span> e cartão
@@ -68,10 +68,10 @@ export default function SobrePage() {
 
             <section className="md:col-span-2">
               <h2 className="mb-2 flex items-center gap-2 text-lg font-semibold">
-                <Ticket className="h-5 w-5 text-sky-600" />
+                <Ticket className="h-5 w-5 text-orange-600" />
                 Retirada
               </h2>
-              <ul className="list-disc space-y-2 pl-5 text-gray-800 marker:text-sky-600">
+              <ul className="list-disc space-y-2 pl-5 text-gray-800 marker:text-orange-600">
                 <li>
                   Após confirmar seu pedido no site, dirija-se a um totem de impressão para retirar seu
                   ticket.

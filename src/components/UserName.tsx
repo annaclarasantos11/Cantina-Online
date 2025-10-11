@@ -13,7 +13,7 @@ export default function UserName() {
     return (
       <Link
         href="/auth/login"
-        className="rounded-lg bg-sky-600 px-4 py-2 text-white hover:bg-sky-700"
+        className="rounded-lg bg-orange-600 px-4 py-2 text-white hover:bg-orange-700"
       >
         Entrar
       </Link>

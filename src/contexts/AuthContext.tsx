@@ -4,7 +4,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { getApiBaseUrl } from "@/lib/api";
 
 type AuthUser = { id: number; name: string; email: string; };
-type SignInInput = { email: string; password: string; remember: boolean; };
+type SignInInput = { email: string; password: string; remember?: boolean; };
 type SignInResult = { ok: true } | { ok: false; message?: string; fieldErrors?: Record<string, string> };
 type AuthContextShape = { user: AuthUser | null; accessToken: string | null; initializing: boolean; signIn: (input: SignInInput) => Promise<SignInResult>; signOut: () => Promise<void>; refreshProfile: () => Promise<void>; };
 type PersistMode = "local" | "session";
@@ -48,14 +48,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => { userRef.current = user; }, [user]);
 
   const persistAuth = useCallback((data: StoredAuth, mode?: PersistMode) => {
-    const persist = mode ?? persistMode.current ?? "session";
+    const persist = mode ?? persistMode.current ?? "local";
     persistMode.current = persist;
     storeAuth(data, persist);
   }, []);
 
   const refreshToken = useCallback(async () => {
-    const res = await fetch(`${apiBase}/auth/refresh`, { method: "POST", credentials: "include", cache: "no-store" });
-    if (!res.ok) { setUser(null); setAccessToken(null); clearStored(); throw new Error("refresh failed"); }
+  const res = await fetch(`${apiBase}/auth/refresh`, { method: "POST", credentials: "include", cache: "no-store" });
+  if (!res.ok) { throw new Error("refresh failed"); }
     const data = (await res.json()) as { accessToken: string };
     setAccessToken(data.accessToken);
     const u = userRef.current;
@@ -63,7 +63,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return data.accessToken;
   }, [apiBase, persistAuth]);
 
-  const safeRefreshProfile = useCallback(async (token?: string, overridePersist?: PersistMode) => {
+  const safeRefreshProfile = useCallback(async (token?: string) => {
     const current = token ?? accessTokenRef.current;
     if (!current) return;
     let res = await fetch(`${apiBase}/auth/me`, { headers: { Authorization: `Bearer ${current}` }, credentials: "include", cache: "no-store" });
@@ -77,7 +77,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const data = (await res.json()) as { user: AuthUser };
     setUser(data.user);
     const tokenToPersist = accessTokenRef.current;
-    if (tokenToPersist) persistAuth({ user: data.user, accessToken: tokenToPersist }, overridePersist);
+    if (tokenToPersist) persistAuth({ user: data.user, accessToken: tokenToPersist }, "local");
   }, [persistAuth, refreshToken]);
 
   useEffect(() => {
@@ -87,16 +87,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (!active) return;
       if (stored) {
         persistMode.current = stored.persist;
+        if (stored.persist !== "local") {
+          persistAuth({ user: stored.user, accessToken: stored.accessToken }, "local");
+          persistMode.current = "local";
+        }
         setUser(stored.user);
         setAccessToken(stored.accessToken);
-        try { await safeRefreshProfile(stored.accessToken, stored.persist); }
+        try { await safeRefreshProfile(stored.accessToken); }
         finally { if (active) setInitializing(false); }
       } else { if (active) setInitializing(false); }
     })();
     return () => { active = false; };
   }, [safeRefreshProfile]);
 
-  const signIn = useCallback(async ({ email, password, remember }: SignInInput): Promise<SignInResult> => {
+  const signIn = useCallback(async ({ email, password }: SignInInput): Promise<SignInResult> => {
     const attempt = (url: string) => fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, credentials: "include", body: JSON.stringify({ email, password }) });
     const urls = [`${apiBase}/auth/login`, "/auth/login"];
     for (const url of urls) {
@@ -116,7 +120,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (token) { setAccessToken(token); accessTokenRef.current = token; }
         if (nextUser) setUser(nextUser);
         if (token && nextUser) {
-          const mode: PersistMode = remember ? "local" : "session";
+          const mode: PersistMode = "local";
           persistMode.current = mode;
           persistAuth({ user: nextUser, accessToken: token }, mode);
           return { ok: true };

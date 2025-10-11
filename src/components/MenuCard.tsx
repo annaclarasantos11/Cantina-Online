@@ -10,6 +10,10 @@ type Props = {
   imageUrl?: string;
   /** Controla o encaixe da imagem. Default: "cover" (lanches). Use "contain" para bebidas. */
   imageMode?: "cover" | "contain";
+  onAdd?: () => void;
+  onIncrease?: () => void;
+  onDecrease?: () => void;
+  quantity?: number;
 };
 
 const BRL = new Intl.NumberFormat("pt-BR", {
@@ -86,6 +90,10 @@ export default function MenuCard({
   price,
   imageUrl,
   imageMode = "cover",
+  onAdd,
+  onIncrease,
+  onDecrease,
+  quantity,
 }: Props) {
   const initial = useMemo(() => normalizeWebPath(imageUrl), [imageUrl]);
   const [{ src, triedIdx, variants }, setState] = useState(() => {
@@ -175,6 +183,37 @@ export default function MenuCard({
           </p>
         ) : null}
         <p className="mt-2 text-sm font-bold text-gray-900">{priceText}</p>
+        {typeof quantity === "number" && quantity > 0 && onIncrease && onDecrease ? (
+          <div className="mt-3 flex items-center justify-between gap-2">
+            <button
+              type="button"
+              onClick={onDecrease}
+              className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-gray-200 bg-white text-lg leading-none text-gray-700 transition hover:bg-gray-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-orange-600"
+              aria-label={`Remover ${name}`}
+            >
+              −
+            </button>
+            <div className="min-w-[3rem] text-center text-sm font-semibold text-gray-800" aria-live="polite">
+              {quantity}
+            </div>
+            <button
+              type="button"
+              onClick={onIncrease}
+              className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-gray-200 bg-white text-lg leading-none text-gray-700 transition hover:bg-gray-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-orange-600"
+              aria-label={`Adicionar mais ${name}`}
+            >
+              +
+            </button>
+          </div>
+        ) : onAdd ? (
+          <button
+            type="button"
+            onClick={onAdd}
+            className="mt-3 inline-flex w-full items-center justify-center rounded-lg bg-orange-600 px-3 py-2 text-sm font-semibold text-white transition hover:bg-orange-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-orange-600"
+          >
+            Adicionar ao carrinho
+          </button>
+        ) : null}
       </div>
     </article>
   );

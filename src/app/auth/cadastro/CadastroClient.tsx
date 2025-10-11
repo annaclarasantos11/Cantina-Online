@@ -102,7 +102,7 @@ export default function CadastroClient() {
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   autoComplete="name"
-                  className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
+                  className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:border-orange-500"
                   aria-invalid={!!errors.name}
                   aria-describedby={errors.name ? "name-err" : undefined}
                   placeholder="Ex.: Maria Oliveira"
@@ -124,7 +124,7 @@ export default function CadastroClient() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   autoComplete="email"
-                  className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
+                  className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:border-orange-500"
                   aria-invalid={!!errors.email}
                   aria-describedby={errors.email ? "email-err" : undefined}
                   placeholder="voce@exemplo.com"
@@ -147,7 +147,7 @@ export default function CadastroClient() {
                     value={pass}
                     onChange={(e) => setPass(e.target.value)}
                     autoComplete="new-password"
-                    className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 pr-10 text-sm outline-none focus:border-sky-500"
+                    className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 pr-10 text-sm outline-none focus:border-orange-500"
                     aria-invalid={!!errors.pass}
                     aria-describedby={errors.pass ? "pass-err" : undefined}
                     placeholder="Mínimo de 8 caracteres"
@@ -179,7 +179,7 @@ export default function CadastroClient() {
                     value={confirm}
                     onChange={(e) => setConfirm(e.target.value)}
                     autoComplete="new-password"
-                    className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 pr-10 text-sm outline-none focus:border-sky-500"
+                    className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 pr-10 text-sm outline-none focus:border-orange-500"
                     aria-invalid={!!errors.confirm}
                     aria-describedby={errors.confirm ? "confirm-err" : undefined}
                     placeholder="Repita sua senha"
@@ -205,11 +205,11 @@ export default function CadastroClient() {
                   type="checkbox"
                   checked={agree}
                   onChange={(e) => setAgree(e.target.checked)}
-                  className="mt-0.5 h-4 w-4 rounded border-gray-300 text-sky-600 focus:ring-sky-500"
+                  className="mt-0.5 h-4 w-4 rounded border-gray-300 text-orange-600 focus:ring-orange-500"
                 />
                 <span>
                   Concordo com os {" "}
-                  <Link href={{ pathname: "/sobre" }} className="text-sky-700 underline">
+                  <Link href={{ pathname: "/sobre" }} className="text-orange-700 underline">
                     termos de uso
                   </Link>
                   .
@@ -230,7 +230,7 @@ export default function CadastroClient() {
 
           <p className="mt-4 text-center text-sm text-gray-600">
             Já tem conta?{" "}
-            <Link href={{ pathname: "/auth/login" }} className="text-sky-700 hover:underline">
+            <Link href={{ pathname: "/auth/login" }} className="text-orange-700 hover:underline">
               Entrar
             </Link>
           </p>

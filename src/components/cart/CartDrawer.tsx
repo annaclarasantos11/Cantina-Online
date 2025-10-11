@@ -84,7 +84,7 @@ export function CartDrawer({
         <div className="flex-1 space-y-3 overflow-y-auto px-4 py-4">
           {items.length === 0 ? (
             <div className="flex h-full flex-col items-center justify-center text-center">
-              <div className="grid h-16 w-16 place-items-center rounded-full bg-sky-50 text-2xl text-sky-700">
+              <div className="grid h-16 w-16 place-items-center rounded-full bg-orange-50 text-2xl text-orange-700">
                 🧺
               </div>
               <h3 className="mt-4 text-base font-semibold">Carrinho vazio</h3>
@@ -97,7 +97,7 @@ export function CartDrawer({
             items.map((it) => (
               <div
                 key={it.productId}
-                className="flex items-start gap-3 rounded-xl border border-gray-200 p-3 transition hover:border-sky-200"
+                className="flex items-start gap-3 rounded-xl border border-gray-200 p-3 transition hover:border-orange-200"
               >
                 {it.imageUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
@@ -133,7 +133,7 @@ export function CartDrawer({
                       <button
                         type="button"
                         onClick={() => decrement(it.productId)}
-                        className="grid h-8 w-8 place-items-center rounded-l-full hover:bg-gray-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-sky-600"
+                        className="grid h-8 w-8 place-items-center rounded-l-full hover:bg-gray-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-orange-600"
                         aria-label={`Diminuir ${it.name}`}
                       >
                         <Minus className="h-4 w-4" />
@@ -144,7 +144,7 @@ export function CartDrawer({
                       <button
                         type="button"
                         onClick={() => increment(it.productId)}
-                        className="grid h-8 w-8 place-items-center rounded-r-full hover:bg-gray-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-sky-600"
+                        className="grid h-8 w-8 place-items-center rounded-r-full hover:bg-gray-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-orange-600"
                         aria-label={`Aumentar ${it.name}`}
                       >
                         <Plus className="h-4 w-4" />

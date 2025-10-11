@@ -19,7 +19,7 @@ export default function HorariosPage() {
   const half = Math.ceil(slots.length / 2);
 
   return (
-    <section className="bg-gradient-to-b from-white to-sky-50/30">
+    <section className="bg-gradient-to-b from-white to-orange-50/30">
       <div className="container mx-auto max-w-5xl px-6 py-10">
         <header className="mb-6">
           <div className="flex flex-wrap items-center justify-between gap-3">
@@ -36,11 +36,11 @@ export default function HorariosPage() {
         <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
           <div className="mb-6 flex flex-wrap items-center gap-3">
             <span className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-white px-3 py-1.5 text-sm text-gray-700">
-              <MapPin className="h-4 w-4 text-sky-600" />
+              <MapPin className="h-4 w-4 text-orange-600" />
               Cantina do pátio principal
             </span>
             <span className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-white px-3 py-1.5 text-sm text-gray-700">
-              <School className="h-4 w-4 text-sky-600" />
+              <School className="h-4 w-4 text-orange-600" />
               Intervalos por segmento
             </span>
           </div>
@@ -53,13 +53,13 @@ export default function HorariosPage() {
             <ol className="relative border-l border-gray-200 pl-8">
               {slots.slice(0, half).map((s) => (
                 <li key={s.titulo} className="relative mb-6 last:mb-0">
-                  <span className="absolute -left-[9px] top-2 h-2.5 w-2.5 rounded-full bg-sky-600 ring-4 ring-sky-100" />
+                  <span className="absolute -left-[9px] top-2 h-2.5 w-2.5 rounded-full bg-orange-600 ring-4 ring-orange-100" />
                   <div className="ml-2 flex items-start justify-between">
                     <div>
                       <p className="font-medium">{s.titulo}</p>
                       {s.detalhe ? <p className="text-sm text-gray-600">{s.detalhe}</p> : null}
                     </div>
-                    <span className="rounded-full bg-sky-50 px-2 py-0.5 text-xs font-semibold text-sky-700 ring-1 ring-sky-100">
+                    <span className="rounded-full bg-orange-50 px-2 py-0.5 text-xs font-semibold text-orange-700 ring-1 ring-orange-100">
                       {s.faixa}
                     </span>
                   </div>
@@ -70,13 +70,13 @@ export default function HorariosPage() {
             <ol className="relative border-l border-gray-200 pl-8">
               {slots.slice(half).map((s) => (
                 <li key={s.titulo} className="relative mb-6 last:mb-0">
-                  <span className="absolute -left-[9px] top-2 h-2.5 w-2.5 rounded-full bg-sky-600 ring-4 ring-sky-100" />
+                  <span className="absolute -left-[9px] top-2 h-2.5 w-2.5 rounded-full bg-orange-600 ring-4 ring-orange-100" />
                   <div className="ml-2 flex items-start justify-between">
                     <div>
                       <p className="font-medium">{s.titulo}</p>
                       {s.detalhe ? <p className="text-sm text-gray-600">{s.detalhe}</p> : null}
                     </div>
-                    <span className="rounded-full bg-sky-50 px-2 py-0.5 text-xs font-semibold text-sky-700 ring-1 ring-sky-100">
+                    <span className="rounded-full bg-orange-50 px-2 py-0.5 text-xs font-semibold text-orange-700 ring-1 ring-orange-100">
                       {s.faixa}
                     </span>
                   </div>

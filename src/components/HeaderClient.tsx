@@ -5,7 +5,6 @@ import { usePathname } from 'next/navigation';
 import { ShoppingCart, Menu, X, LogOut } from 'lucide-react';
 import { useCart } from '@/contexts/CartContext';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { CartDrawer } from '@/components/cart/CartDrawer';
 import { useAuth } from '@/contexts/AuthContext';
 import type { Route } from 'next';
 
@@ -21,7 +20,6 @@ export default function HeaderClient() {
   const { count } = useCart();
   const { user, signOut, initializing, refreshProfile } = useAuth();
 
-  const [openCart, setOpenCart] = useState(false);
   const [openMobile, setOpenMobile] = useState(false);
   const [openUserMenu, setOpenUserMenu] = useState(false);
   const userMenuRef = useRef<HTMLDivElement | null>(null);
@@ -83,7 +81,7 @@ export default function HeaderClient() {
     () => (
       <Link href={{ pathname: '/' }} className="flex items-center font-semibold tracking-tight">
         <span>Cantina</span>
-        <span className="text-sky-600">Online</span>
+        <span className="text-orange-600">Online</span>
       </Link>
     ),
     []
@@ -91,7 +89,7 @@ export default function HeaderClient() {
 
   return (
     <header className="sticky top-0 z-50 glass border-b border-gray-200/80">
-      <div className="container mx-auto max-w-6xl px-4">
+      <div className="container mx-auto max-w-7xl px-4">
         <div className="flex h-14 items-center justify-between">
           {brand}
 
@@ -106,8 +104,8 @@ export default function HeaderClient() {
                   className={[
                     'rounded-md px-3 py-2 text-sm transition',
                     active
-                      ? 'text-sky-700 font-semibold underline underline-offset-4'
-                      : 'text-gray-700 hover:text-sky-700 hover:bg-gray-50',
+                      ? 'text-orange-700 font-semibold underline underline-offset-4'
+                      : 'text-gray-700 hover:text-orange-700 hover:bg-gray-50',
                   ].join(' ')}
                 >
                   {item.label}
@@ -126,12 +124,12 @@ export default function HeaderClient() {
                 <button
                   type="button"
                   onClick={() => setOpenUserMenu((v) => !v)}
-                  className="flex items-center gap-2 rounded-full border border-gray-300 bg-white pl-1 pr-3 py-1.5 text-sm text-gray-800 shadow-sm transition hover:border-sky-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-sky-600"
+                  className="flex items-center gap-2 rounded-full border border-gray-300 bg-white pl-1 pr-3 py-1.5 text-sm text-gray-800 shadow-sm transition hover:border-orange-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-orange-600"
                   aria-haspopup="menu"
                   aria-expanded={openUserMenu}
                 >
                   <span
-                    className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-sky-600 text-sm font-semibold text-white"
+                    className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-orange-600 text-sm font-semibold text-white"
                     aria-label={`Conta de ${userDisplayName}`}
                   >
                     {userInitial}
@@ -187,39 +185,38 @@ export default function HeaderClient() {
             ) : (
               <Link
                 href={{ pathname: '/auth/login' }}
-                className="hidden sm:inline-flex btn btn-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-sky-600"
+                className="hidden sm:inline-flex btn btn-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-orange-600"
               >
                 Entrar
               </Link>
             )}
 
-            <button
-              onClick={() => setOpenCart(true)}
+            <Link
+              href={{ pathname: '/pedidos' }}
               className={[
-                'inline-flex items-center rounded-full border px-3 py-1.5 text-sm transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-sky-600',
+                'inline-flex items-center rounded-full border px-3 py-1.5 text-sm transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-orange-600',
                 count > 0
-                  ? 'border-sky-600 bg-sky-50 text-sky-800'
+                  ? 'border-orange-600 bg-orange-50 text-orange-800'
                   : 'border-gray-300 bg-white text-gray-800 hover:bg-gray-50',
               ].join(' ')}
-              aria-label={`Abrir carrinho, ${count} ${count === 1 ? 'item' : 'itens'}`}
-              aria-live="polite"
+              aria-label={`Ir para o carrinho, ${count} ${count === 1 ? 'item' : 'itens'}`}
             >
               <ShoppingCart className="mr-2 h-4 w-4" />
               Carrinho
               <span
                 className={[
                   'ml-2 inline-flex h-6 min-w-6 items-center justify-center rounded-full px-2 text-sm font-semibold text-white',
-                  count > 0 ? 'bg-sky-600' : 'bg-gray-400',
+                  count > 0 ? 'bg-orange-600' : 'bg-gray-400',
                   pop ? 'animate-[pop_.3s_ease]' : '',
                 ].join(' ')}
               >
                 {count}
               </span>
-            </button>
+            </Link>
 
             <button
               onClick={() => setOpenMobile((v) => !v)}
-              className="md:hidden rounded-md border border-gray-300 p-2 hover:bg-gray-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-sky-600"
+              className="md:hidden rounded-md border border-gray-300 p-2 hover:bg-gray-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-orange-600"
               aria-label={openMobile ? 'Fechar menu' : 'Abrir menu'}
             >
               {openMobile ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
@@ -230,7 +227,7 @@ export default function HeaderClient() {
 
       {openMobile && (
         <div className="md:hidden border-t border-gray-200 bg-white/90 backdrop-blur">
-          <nav aria-label="Principal (mobile)" className="container mx-auto max-w-6xl px-4 py-2">
+          <nav aria-label="Principal (mobile)" className="container mx-auto max-w-7xl px-4 py-2">
             <ul className="flex flex-col py-2">
               {nav.map((item) => {
                 const active = isActive(item.href);
@@ -243,8 +240,8 @@ export default function HeaderClient() {
                       className={[
                         'block rounded-md px-3 py-2 text-sm transition',
                         active
-                          ? 'text-sky-700 font-semibold underline underline-offset-4'
-                          : 'text-gray-700 hover:text-sky-700 hover:bg-gray-50',
+                          ? 'text-orange-700 font-semibold underline underline-offset-4'
+                          : 'text-gray-700 hover:text-orange-700 hover:bg-gray-50',
                       ].join(' ')}
                     >
                       {item.label}
@@ -255,7 +252,7 @@ export default function HeaderClient() {
               {user ? (
                 <li className="mt-2 border-t border-gray-200 pt-3">
                   <div className="flex items-center gap-3 px-3 pb-2">
-                    <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-sky-600 text-sm font-semibold text-white">
+                    <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-orange-600 text-sm font-semibold text-white">
                       {userInitial}
                     </span>
                     <div className="text-sm">
@@ -286,7 +283,7 @@ export default function HeaderClient() {
                   <Link
                     href={{ pathname: '/auth/login' }}
                     onClick={() => setOpenMobile(false)}
-                    className="block rounded-md px-3 py-2 text-sm text-white bg-sky-600 hover:bg-sky-700"
+                    className="block rounded-md px-3 py-2 text-sm text-white bg-orange-600 hover:bg-orange-700"
                   >
                     Entrar
                   </Link>
@@ -297,7 +294,6 @@ export default function HeaderClient() {
         </div>
       )}
 
-      <CartDrawer open={openCart} onOpenChange={setOpenCart} />
     </header>
   );
 }

@@ -14,15 +14,25 @@ const AuthContext = createContext<AuthContextShape | undefined>(undefined);
 const LOCAL_KEY = "cantina-auth";
 const SESSION_KEY = "cantina-auth-session";
 
-type StoredAuth = { user: AuthUser; accessToken: string; };
+type StoredAuth = { user: AuthUser; accessToken: string };
 type StoredData = StoredAuth & { persist: PersistMode };
 
 function readStored(): StoredData | null {
   if (typeof window === "undefined") return null;
   const l = window.localStorage.getItem(LOCAL_KEY);
-  if (l) { try { const p = JSON.parse(l) as StoredAuth; if (p?.user && p?.accessToken) return { ...p, persist: "local" }; } catch {} }
+  if (l) {
+    try {
+      const p = JSON.parse(l) as StoredAuth;
+      if (p?.user && p?.accessToken) return { ...p, persist: "local" };
+    } catch {}
+  }
   const s = window.sessionStorage.getItem(SESSION_KEY);
-  if (s) { try { const p = JSON.parse(s) as StoredAuth; if (p?.user && p?.accessToken) return { ...p, persist: "session" }; } catch {} }
+  if (s) {
+    try {
+      const p = JSON.parse(s) as StoredAuth;
+      if (p?.user && p?.accessToken) return { ...p, persist: "session" };
+    } catch {}
+  }
   return null;
 }
 
@@ -43,6 +53,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const userRef = useRef<AuthUser | null>(null);
   const apiBase = useMemo(() => getApiBaseUrl(), []);
 
+  const resetAuth = useCallback(() => {
+    setUser(null);
+    setAccessToken(null);
+    accessTokenRef.current = null;
+    userRef.current = null;
+    persistMode.current = null;
+    clearStored();
+  }, []);
+
   useEffect(() => { accessTokenRef.current = accessToken; }, [accessToken]);
 
   useEffect(() => { userRef.current = user; }, [user]);
@@ -54,8 +73,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const refreshToken = useCallback(async () => {
-  const res = await fetch(`${apiBase}/auth/refresh`, { method: "POST", credentials: "include", cache: "no-store" });
-  if (!res.ok) { throw new Error("refresh failed"); }
+    const res = await fetch(`${apiBase}/auth/refresh`, {
+      method: "POST",
+      credentials: "include",
+      cache: "no-store",
+    });
+    if (!res.ok) {
+      const error = new Error("refresh failed");
+      (error as any).status = res.status;
+      throw error;
+    }
     const data = (await res.json()) as { accessToken: string };
     setAccessToken(data.accessToken);
     const u = userRef.current;
@@ -71,14 +98,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       try {
         const nt = await refreshToken();
         res = await fetch(`${apiBase}/auth/me`, { headers: { Authorization: `Bearer ${nt}` }, credentials: "include", cache: "no-store" });
-      } catch { return; }
+      } catch (err: any) {
+        if (err?.status === 401) {
+          // refresh token inválido; mantenha dados locais para evitar logout abrupto
+          return;
+        }
+        return;
+      }
     }
     if (!res.ok) return;
     const data = (await res.json()) as { user: AuthUser };
     setUser(data.user);
     const tokenToPersist = accessTokenRef.current;
     if (tokenToPersist) persistAuth({ user: data.user, accessToken: tokenToPersist }, "local");
-  }, [persistAuth, refreshToken]);
+  }, [apiBase, persistAuth, refreshToken]);
 
   useEffect(() => {
     let active = true;
@@ -91,14 +124,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           persistAuth({ user: stored.user, accessToken: stored.accessToken }, "local");
           persistMode.current = "local";
         }
+        userRef.current = stored.user;
+        accessTokenRef.current = stored.accessToken;
         setUser(stored.user);
         setAccessToken(stored.accessToken);
-        try { await safeRefreshProfile(stored.accessToken); }
-        finally { if (active) setInitializing(false); }
-      } else { if (active) setInitializing(false); }
+      }
+
+      try {
+        const freshToken = await refreshToken();
+        await safeRefreshProfile(freshToken);
+      } catch (err: any) {
+        if (err?.status === 401 && !stored) {
+          resetAuth();
+        }
+      } finally {
+        if (active) setInitializing(false);
+      }
     })();
     return () => { active = false; };
-  }, [safeRefreshProfile]);
+  }, [refreshToken, safeRefreshProfile, persistAuth, resetAuth]);
 
   const signIn = useCallback(async ({ email, password }: SignInInput): Promise<SignInResult> => {
     const attempt = (url: string) => fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, credentials: "include", body: JSON.stringify({ email, password }) });
@@ -133,8 +177,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signOut = useCallback(async () => {
     try { await fetch(`${apiBase}/auth/logout`, { method: "POST", credentials: "include" }); } catch {}
-    setUser(null); setAccessToken(null); accessTokenRef.current = null; persistMode.current = null; clearStored();
-  }, []);
+    resetAuth();
+  }, [apiBase, resetAuth]);
 
   const value: AuthContextShape = useMemo(() => ({ user, accessToken, initializing, signIn, signOut, refreshProfile: safeRefreshProfile }), [user, accessToken, initializing, signIn, signOut, safeRefreshProfile]);
 

@@ -1,6 +1,14 @@
 export function getApiBaseUrl(): string {
-  const raw = process.env.NEXT_PUBLIC_API_URL?.trim() || "";
-  const isHttp = /^https?:\/\//i.test(raw);
-  const base = (isHttp ? raw : "http://127.0.0.1:4000").replace(/\/$/, "");
-  return base.replace("://localhost", "://127.0.0.1");
+  const fromEnv = process.env.NEXT_PUBLIC_API_URL?.trim();
+  if (fromEnv) {
+    return fromEnv.replace(/\/$/, "");
+  }
+
+  if (typeof window !== "undefined") {
+    const { protocol, hostname } = window.location;
+    const port = process.env.NEXT_PUBLIC_API_PORT?.trim() || "4000";
+    return `${protocol}//${hostname}:${port}`.replace(/\/$/, "");
+  }
+
+  return "http://localhost:4000";
 }

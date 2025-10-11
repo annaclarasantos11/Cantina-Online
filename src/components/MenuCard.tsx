@@ -14,6 +14,7 @@ type Props = {
   onIncrease?: () => void;
   onDecrease?: () => void;
   quantity?: number;
+  maxQuantity?: number;
 };
 
 const BRL = new Intl.NumberFormat("pt-BR", {
@@ -94,6 +95,7 @@ export default function MenuCard({
   onIncrease,
   onDecrease,
   quantity,
+  maxQuantity,
 }: Props) {
   const initial = useMemo(() => normalizeWebPath(imageUrl), [imageUrl]);
   const [{ src, triedIdx, variants }, setState] = useState(() => {
@@ -134,6 +136,22 @@ export default function MenuCard({
       : /^\d+(\.\d+)?$/.test(price)
       ? BRL.format(parseFloat(price))
       : price;
+
+  const safeMax = typeof maxQuantity === "number" ? Math.max(maxQuantity, 0) : undefined;
+  const currentQuantity = quantity ?? 0;
+  const remaining =
+    typeof safeMax === "number"
+      ? Math.max(safeMax - currentQuantity, 0)
+      : undefined;
+  const addDisabled = typeof safeMax === "number" && safeMax <= 0;
+  const increaseDisabled = typeof safeMax === "number" && currentQuantity >= safeMax;
+  const stockLabel = (() => {
+    if (typeof safeMax !== "number") return null;
+    if (safeMax === 0) return "Sem estoque no momento";
+    if (currentQuantity === 0) return `Disponíveis: ${safeMax}`;
+    if (remaining && remaining > 0) return `Disponíveis: ${remaining} de ${safeMax}`;
+    return "Sem unidades disponíveis agora";
+  })();
 
   return (
     <article className="group overflow-hidden rounded-xl bg-white ring-1 ring-gray-200 shadow-sm transition-all hover:shadow-lg hover:-translate-y-0.5">
@@ -183,6 +201,11 @@ export default function MenuCard({
           </p>
         ) : null}
         <p className="mt-2 text-sm font-bold text-gray-900">{priceText}</p>
+        {stockLabel ? (
+          <p className="mt-1 text-xs text-gray-500" aria-live="polite">
+            {stockLabel}
+          </p>
+        ) : null}
         {typeof quantity === "number" && quantity > 0 && onIncrease && onDecrease ? (
           <div className="mt-3 flex items-center justify-between gap-2">
             <button
@@ -199,7 +222,11 @@ export default function MenuCard({
             <button
               type="button"
               onClick={onIncrease}
-              className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-gray-200 bg-white text-lg leading-none text-gray-700 transition hover:bg-gray-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-orange-600"
+              disabled={increaseDisabled}
+              aria-disabled={increaseDisabled}
+              className={`inline-flex h-9 w-9 items-center justify-center rounded-full border border-gray-200 bg-white text-lg leading-none text-gray-700 transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-orange-600 ${
+                increaseDisabled ? 'cursor-not-allowed opacity-40' : 'hover:bg-gray-100'
+              }`}
               aria-label={`Adicionar mais ${name}`}
             >
               +
@@ -209,7 +236,13 @@ export default function MenuCard({
           <button
             type="button"
             onClick={onAdd}
-            className="mt-3 inline-flex w-full items-center justify-center rounded-lg bg-orange-600 px-3 py-2 text-sm font-semibold text-white transition hover:bg-orange-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-orange-600"
+            disabled={addDisabled}
+            aria-disabled={addDisabled}
+            className={`mt-3 inline-flex w-full items-center justify-center rounded-lg px-3 py-2 text-sm font-semibold text-white transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-orange-600 ${
+              addDisabled
+                ? 'bg-gray-300 cursor-not-allowed'
+                : 'bg-orange-600 hover:bg-orange-700'
+            }`}
           >
             Adicionar ao carrinho
           </button>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Search } from "lucide-react";
 import MenuCard from "@/components/MenuCard";
 import { useCart } from "@/contexts/CartContext";
@@ -13,6 +13,7 @@ type Product = {
   price: string | number;
   imageUrl?: string;
   category: Category;
+  stock?: number | string;
 };
 
 type Props = { products: Product[] };
@@ -40,7 +41,7 @@ function normalize(t: string) {
 export default function MenuFilters({ products }: Props) {
   const [q, setQ] = useState("");
   const [filter, setFilter] = useState<QuickFilter>("todos");
-  const { addItem, increment, decrement, items } = useCart();
+  const { addItem, increment, decrement, items, setItemLimit } = useCart();
 
   const counts = useMemo(() => {
     const c = { todos: products.length, salgados: 0, doces: 0, bebidas: 0 };
@@ -67,6 +68,29 @@ export default function MenuFilters({ products }: Props) {
       })
       .sort((a, b) => normalize(a.name).localeCompare(normalize(b.name)));
   }, [products, q, filter]);
+
+  useEffect(() => {
+    for (const p of products) {
+      const normalizedId =
+        typeof p.id === "number"
+          ? p.id
+          : Number.parseInt(String(p.id), 10);
+      if (!Number.isFinite(normalizedId)) continue;
+      let stock: number | undefined;
+      if (typeof p.stock === "number" && Number.isFinite(p.stock)) {
+        stock = p.stock;
+      } else if (typeof p.stock === "string") {
+        const parsed = Number.parseInt(p.stock.trim(), 10);
+        if (Number.isFinite(parsed)) stock = parsed;
+      }
+      if (typeof stock !== "number") continue;
+      const entry = items.find((item) => item.productId === normalizedId);
+      if (!entry) continue;
+      if (entry.maxQuantity !== stock || entry.quantity > stock) {
+        setItemLimit(normalizedId, stock);
+      }
+    }
+  }, [products, items, setItemLimit]);
 
   const pills: Array<{ key: QuickFilter; label: string; count: number }> = [
     { key: "todos", label: "Todos", count: counts.todos },
@@ -153,6 +177,13 @@ export default function MenuFilters({ products }: Props) {
                 ? p.id
                 : Number.parseInt(String(p.id), 10);
             const canAdd = Number.isFinite(normalizedId) && hasValidPrice;
+            let stock: number | undefined;
+            if (typeof p.stock === "number" && Number.isFinite(p.stock)) {
+              stock = p.stock;
+            } else if (typeof p.stock === "string") {
+              const parsed = Number.parseInt(p.stock.trim(), 10);
+              if (Number.isFinite(parsed)) stock = parsed;
+            }
             const cartEntry =
               Number.isFinite(normalizedId)
                 ? items.find((item) => item.productId === normalizedId)
@@ -170,6 +201,7 @@ export default function MenuFilters({ products }: Props) {
                   price={p.price}
                   imageUrl={p.imageUrl}
                   imageMode={isBebida ? "contain" : "cover"}
+                  maxQuantity={typeof stock === "number" ? stock : undefined}
                   onAdd={
                     canAdd
                       ? () =>
@@ -178,6 +210,7 @@ export default function MenuFilters({ products }: Props) {
                             name: p.name,
                             price: normalizedPriceRaw,
                             imageUrl: p.imageUrl,
+                            maxQuantity: typeof stock === "number" ? stock : undefined,
                           })
                       : undefined
                   }

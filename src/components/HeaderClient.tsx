@@ -124,17 +124,17 @@ export default function HeaderClient() {
                 <button
                   type="button"
                   onClick={() => setOpenUserMenu((v) => !v)}
-                  className="flex items-center gap-2 rounded-full border border-gray-300 bg-white pl-1 pr-3 py-1.5 text-sm text-gray-800 shadow-sm transition hover:border-orange-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-orange-600"
+                  className="flex items-center gap-3 rounded-full border border-gray-300 bg-white pl-1.5 pr-3.5 py-2 text-base text-gray-800 shadow-sm transition hover:border-orange-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-orange-600"
                   aria-haspopup="menu"
                   aria-expanded={openUserMenu}
                 >
                   <span
-                    className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-orange-600 text-sm font-semibold text-white"
+                    className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-orange-600 text-base font-semibold text-white"
                     aria-label={`Conta de ${userDisplayName}`}
                   >
                     {userInitial}
                   </span>
-                  <span className="hidden sm:inline max-w-[8rem] truncate text-left font-medium">
+                  <span className="hidden sm:inline max-w-[12rem] truncate text-left text-sm font-semibold">
                     {userDisplayName}
                   </span>
                 </button>
@@ -142,13 +142,13 @@ export default function HeaderClient() {
                 {openUserMenu && (
                   <div
                     role="menu"
-                    className="absolute right-0 mt-2 w-56 rounded-lg border border-gray-200 bg-white py-2 shadow-lg"
+                    className="absolute z-50 top-full left-1/2 mt-3 w-72 -translate-x-1/2 rounded-xl border border-gray-200 bg-white py-3 shadow-2xl"
                   >
-                    <div className="px-4 pb-3 text-sm text-gray-700">
+                    <div className="px-5 pb-3 text-base text-gray-700">
                       <p className="font-semibold truncate" title={userDisplayName}>
                         {userDisplayName}
                       </p>
-                      <p className="mt-0.5 truncate text-xs text-gray-500" title={user.email}>
+                      <p className="mt-1 truncate text-sm text-gray-500" title={user.email}>
                         {user.email}
                       </p>
                     </div>
@@ -156,7 +156,7 @@ export default function HeaderClient() {
                     <Link
                       href="/perfil"
                       onClick={() => setOpenUserMenu(false)}
-                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                      className="block px-5 py-2.5 text-base text-gray-700 hover:bg-gray-50"
                       role="menuitem"
                     >
                       Meu perfil
@@ -168,10 +168,10 @@ export default function HeaderClient() {
                         setOpenUserMenu(false);
                         signOut();
                       }}
-                      className="flex w-full items-center gap-2 px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50"
+                      className="flex w-full items-center gap-3 px-5 py-2.5 text-left text-base text-red-600 hover:bg-red-50"
                       role="menuitem"
                     >
-                      <LogOut className="h-4 w-4" />
+                      <LogOut className="h-5 w-5" />
                       Sair
                     </button>
                   </div>
@@ -252,18 +252,18 @@ export default function HeaderClient() {
               {user ? (
                 <li className="mt-2 border-t border-gray-200 pt-3">
                   <div className="flex items-center gap-3 px-3 pb-2">
-                    <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-orange-600 text-sm font-semibold text-white">
+                    <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-orange-600 text-base font-semibold text-white">
                       {userInitial}
                     </span>
                     <div className="text-sm">
-                      <p className="font-semibold text-gray-800">Olá, {firstName}</p>
-                      <p className="text-xs text-gray-500">{user.email}</p>
+                      <p className="text-base font-semibold text-gray-800">Olá, {firstName}</p>
+                      <p className="text-sm text-gray-500">{user.email}</p>
                     </div>
                   </div>
                   <Link
                     href="/perfil"
                     onClick={() => setOpenMobile(false)}
-                    className="block rounded-md px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                    className="block rounded-md px-3 py-2.5 text-base text-gray-700 hover:bg-gray-50"
                   >
                     Meu perfil
                   </Link>
@@ -273,7 +273,7 @@ export default function HeaderClient() {
                       setOpenMobile(false);
                       signOut();
                     }}
-                    className="mt-1 w-full rounded-md px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50"
+                    className="mt-2 w-full rounded-md px-3 py-2.5 text-left text-base text-red-600 hover:bg-red-50"
                   >
                     Sair
                   </button>

@@ -16,7 +16,6 @@ export default function LoginClient() {
   const [email, setEmail] = useState("");
   const [pass, setPass] = useState("");
   const [show, setShow] = useState(false);
-  const [remember, setRemember] = useState(true);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<{ email?: string; pass?: string }>({});
   const [formError, setFormError] = useState<string | null>(null);
@@ -38,7 +37,7 @@ export default function LoginClient() {
     }
     setLoading(true);
     setFormError(null);
-    const result = await signIn({ email: email.trim(), password: pass, remember });
+  const result = await signIn({ email: email.trim(), password: pass });
     setLoading(false);
     if (!result.ok) {
       setFormError(result.message ?? "Falha ao entrar.");
@@ -95,7 +94,7 @@ export default function LoginClient() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 autoComplete="email"
-                className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
+                className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:border-orange-500"
                 aria-invalid={!!errors.email}
                 aria-describedby={errors.email ? "email-err" : undefined}
                 placeholder="voce@exemplo.com"
@@ -118,7 +117,7 @@ export default function LoginClient() {
                   value={pass}
                   onChange={(e) => setPass(e.target.value)}
                   autoComplete="current-password"
-                  className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 pr-10 text-sm outline-none focus:border-sky-500"
+                  className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 pr-10 text-sm outline-none focus:border-orange-500"
                   aria-invalid={!!errors.pass}
                   aria-describedby={errors.pass ? "pass-err" : undefined}
                   placeholder="••••••••"
@@ -139,20 +138,10 @@ export default function LoginClient() {
               )}
             </div>
 
-            <div className="flex items-center justify-between">
-              <label className="inline-flex items-center gap-2 text-sm text-gray-700">
-                <input
-                  type="checkbox"
-                  checked={remember}
-                  onChange={(e) => setRemember(e.target.checked)}
-                  className="h-4 w-4 rounded border-gray-300 text-sky-600 focus:ring-sky-500"
-                />
-                Lembrar de mim
-              </label>
-
+            <div className="flex items-center justify-end">
               <Link
                 href={{ pathname: "/auth/recuperar" }}
-                className="text-sm text-sky-700 hover:underline"
+                className="text-sm text-orange-700 hover:underline"
               >
                 Esqueci minha senha
               </Link>
@@ -172,7 +161,7 @@ export default function LoginClient() {
             Não tem conta?{" "}
             <Link
               href={{ pathname: "/auth/cadastro" }}
-              className="text-sky-700 hover:underline"
+              className="text-orange-700 hover:underline"
             >
               Cadastre-se
             </Link>

@@ -3,7 +3,7 @@
 @tailwind utilities;
 
 :root {
-  --brand: #0ea5e9;
+  --brand: #f97316;
 }
 
 html, body {
@@ -23,7 +23,7 @@ body {
 }
 
 .btn-primary {
-  @apply bg-sky-600 text-white hover:bg-sky-700;
+  @apply bg-orange-600 text-white hover:bg-orange-700;
 }
 
 .btn-outline {
@@ -35,8 +35,8 @@ body {
 .bg-landing {
   position: relative;
   background:
-    radial-gradient(1200px circle at 10% 10%, rgba(14,165,233,.12), transparent 60%),
-    radial-gradient(800px circle at 80% 20%, rgba(99,102,241,.10), transparent 55%),
+    radial-gradient(1200px circle at 10% 10%, rgba(249,115,22,.12), transparent 60%),
+    radial-gradient(800px circle at 80% 20%, rgba(245,158,11,.10), transparent 55%),
     linear-gradient(180deg, #fff 0%, #f8fafc 100%);
 }
 
@@ -104,7 +104,7 @@ body {
 
 /* foco visível consistente */
 :where(a, button, [role="button"], input, select, textarea):focus-visible {
-  outline: 2px solid theme('colors.sky.600');
+  outline: 2px solid theme('colors.orange.600');
   outline-offset: 2px;
 }
 

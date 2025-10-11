@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { Search } from "lucide-react";
 import MenuCard from "@/components/MenuCard";
+import { useCart } from "@/contexts/CartContext";
 
 type Category = { id: number; name: string; slug: string };
 type Product = {
@@ -39,6 +40,7 @@ function normalize(t: string) {
 export default function MenuFilters({ products }: Props) {
   const [q, setQ] = useState("");
   const [filter, setFilter] = useState<QuickFilter>("todos");
+  const { addItem, increment, decrement, items } = useCart();
 
   const counts = useMemo(() => {
     const c = { todos: products.length, salgados: 0, doces: 0, bebidas: 0 };
@@ -90,7 +92,7 @@ export default function MenuFilters({ products }: Props) {
                 className={[
                   "inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm transition",
                   active
-                    ? "bg-sky-600 text-white border-sky-600"
+                    ? "bg-orange-600 text-white border-orange-600"
                     : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50",
                 ].join(" ")}
               >
@@ -117,7 +119,7 @@ export default function MenuFilters({ products }: Props) {
             onChange={(e) => setQ(e.target.value)}
             placeholder="Buscar item do cardápio..."
             aria-label="Buscar item do cardápio"
-            className="w-full rounded-lg border border-gray-300 bg-white pl-10 pr-3 py-2 text-sm outline-none ring-0 focus:border-sky-500"
+            className="w-full rounded-lg border border-gray-300 bg-white pl-10 pr-3 py-2 text-sm outline-none ring-0 focus:border-orange-500"
           />
           {q ? (
             <button
@@ -141,6 +143,20 @@ export default function MenuFilters({ products }: Props) {
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {list.map((p, i) => {
             const isBebida = mapCategoryToFilter(p.category?.slug ?? "") === "bebidas";
+            const normalizedPriceRaw =
+              typeof p.price === "number"
+                ? p.price
+                : Number.parseFloat(String(p.price).replace(",", "."));
+            const hasValidPrice = Number.isFinite(normalizedPriceRaw);
+            const normalizedId =
+              typeof p.id === "number"
+                ? p.id
+                : Number.parseInt(String(p.id), 10);
+            const canAdd = Number.isFinite(normalizedId) && hasValidPrice;
+            const cartEntry =
+              Number.isFinite(normalizedId)
+                ? items.find((item) => item.productId === normalizedId)
+                : undefined;
             return (
               <div
                 key={p.id}
@@ -154,6 +170,28 @@ export default function MenuFilters({ products }: Props) {
                   price={p.price}
                   imageUrl={p.imageUrl}
                   imageMode={isBebida ? "contain" : "cover"}
+                  onAdd={
+                    canAdd
+                      ? () =>
+                          addItem({
+                            productId: normalizedId,
+                            name: p.name,
+                            price: normalizedPriceRaw,
+                            imageUrl: p.imageUrl,
+                          })
+                      : undefined
+                  }
+                  onIncrease={
+                    cartEntry && canAdd
+                      ? () => increment(normalizedId)
+                      : undefined
+                  }
+                  onDecrease={
+                    cartEntry && canAdd
+                      ? () => decrement(normalizedId)
+                      : undefined
+                  }
+                  quantity={cartEntry?.quantity}
                 />
               </div>
             );

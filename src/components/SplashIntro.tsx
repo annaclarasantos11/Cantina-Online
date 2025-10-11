@@ -46,7 +46,7 @@ export default function SplashIntro() {
       <header className="container pt-10 flex items-center justify-between relative z-10">
         <Link href="/" className="font-bold text-xl">
           <span className="text-gray-900">Cantina</span>
-          <span className="text-sky-600">Online</span>
+          <span className="text-orange-600">Online</span>
         </Link>
         <Link href="/menu" className="btn btn-outline">
           Ver Menu
@@ -58,7 +58,7 @@ export default function SplashIntro() {
         <div className="max-w-3xl space-y-6">
           <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight leading-tight">
             Cantina sem fila,{" "}
-            <span className="text-sky-600">do seu jeito</span>
+            <span className="text-orange-600">do seu jeito</span>
           </h1>
           <p className="text-lg sm:text-xl text-gray-600 max-w-2xl mx-auto">
             Faça seu pedido online, retire no horário escolhido e economize tempo. 

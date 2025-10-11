@@ -1,6 +1,7 @@
 'use client';
 
 import { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
 
 export type CartItem = {
   productId: number;
@@ -25,25 +26,59 @@ type CartContextType = {
 
 const CartContext = createContext<CartContextType | null>(null);
 
-const KEY = 'cantina-cart-v1';
+const BASE_KEY = 'cantina-cart-v1';
+function resolveKey(userId: number | null | undefined) {
+  if (!userId) return BASE_KEY;
+  return `${BASE_KEY}-user-${userId}`;
+}
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
+  const { user } = useAuth();
+  const storageKey = useMemo(() => resolveKey(user?.id), [user?.id]);
+  const lastLoadedKey = useRef<string | null>(null);
 
   // load from localStorage
   useEffect(() => {
     try {
-      const raw = localStorage.getItem(KEY);
-      if (raw) setItems(JSON.parse(raw));
-    } catch {}
-  }, []);
+      if (lastLoadedKey.current === storageKey) return;
+      const rawPrimary = localStorage.getItem(storageKey);
+      if (rawPrimary) {
+        setItems(JSON.parse(rawPrimary));
+        lastLoadedKey.current = storageKey;
+        return;
+      }
+
+      if (user?.id) {
+        const fallback = localStorage.getItem(BASE_KEY);
+        if (fallback) {
+          const parsed = JSON.parse(fallback) as CartItem[];
+          setItems(parsed);
+          localStorage.setItem(storageKey, fallback);
+          lastLoadedKey.current = storageKey;
+          return;
+        }
+      }
+
+      const rawBase = localStorage.getItem(BASE_KEY);
+      if (rawBase) setItems(JSON.parse(rawBase));
+      else setItems([]);
+      lastLoadedKey.current = storageKey;
+    } catch {
+      setItems([]);
+    }
+  }, [storageKey, user?.id]);
 
   // persist
   useEffect(() => {
     try {
-      localStorage.setItem(KEY, JSON.stringify(items));
+      const payload = JSON.stringify(items);
+      localStorage.setItem(storageKey, payload);
+      if (user?.id && storageKey !== BASE_KEY) {
+        localStorage.setItem(BASE_KEY, payload);
+      }
     } catch {}
-  }, [items]);
+  }, [items, storageKey, user?.id]);
 
   const api: CartContextType = useMemo(() => ({
     items,

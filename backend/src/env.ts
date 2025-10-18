@@ -12,7 +12,12 @@ const envSchema = z.object({
   REFRESH_TTL: z.string().default("7d"),
   CORS_ORIGIN: z.string().min(1, "CORS_ORIGIN is required"),
   FRONTEND_URL: z.string().default("http://localhost:3000"),
-  RESEND_API_KEY: z.string().optional(),
+  SMTP_HOST: z.string().optional(),
+  SMTP_PORT: z.coerce.number().optional(),
+  SMTP_SECURE: z.string().optional(),
+  SMTP_USER: z.string().optional(),
+  SMTP_PASS: z.string().optional(),
+  SMTP_FROM: z.string().optional(),
   PORT: z.coerce.number().default(4000)
 });
 

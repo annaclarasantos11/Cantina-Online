@@ -1,19 +1,37 @@
-import { Resend } from "resend";
+import nodemailer from "nodemailer";
 import { env } from "../env";
 
-const resend = env.RESEND_API_KEY ? new Resend(env.RESEND_API_KEY) : null;
+// Configurar transportador de e-mail
+const createTransporter = () => {
+  if (!env.SMTP_HOST || !env.SMTP_PORT || !env.SMTP_USER || !env.SMTP_PASS) {
+    console.log("[INFO] SMTP não configurado. Links de recuperação aparecerão no console.");
+    return null;
+  }
+
+  return nodemailer.createTransport({
+    host: env.SMTP_HOST,
+    port: env.SMTP_PORT,
+    secure: env.SMTP_SECURE === "true",
+    auth: {
+      user: env.SMTP_USER,
+      pass: env.SMTP_PASS,
+    },
+  });
+};
 
 export async function sendPasswordResetEmail(email: string, resetToken: string): Promise<boolean> {
-  if (!resend) {
-    console.log(`[DEBUG] Sem RESEND_API_KEY. Link de recuperação: ${env.FRONTEND_URL}/auth/reset-password?token=${resetToken}`);
+  const transporter = createTransporter();
+
+  if (!transporter) {
+    console.log(`[DEBUG] Link de recuperação para ${email}: ${env.FRONTEND_URL}/auth/reset-password?token=${resetToken}`);
     return true;
   }
 
   const resetUrl = `${env.FRONTEND_URL}/auth/reset-password?token=${resetToken}`;
 
   try {
-    await resend.emails.send({
-      from: "onboarding@resend.dev", // Use seu domínio após configurar no Resend
+    await transporter.sendMail({
+      from: env.SMTP_FROM || env.SMTP_USER,
       to: email,
       subject: "Recupere sua senha - Cantina Online",
       html: `
@@ -51,6 +69,7 @@ export async function sendPasswordResetEmail(email: string, resetToken: string):
       `,
     });
 
+    console.log(`[INFO] E-mail de recuperação enviado para ${email}`);
     return true;
   } catch (error) {
     console.error("Erro ao enviar e-mail de recuperação:", error);

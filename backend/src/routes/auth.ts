@@ -5,6 +5,8 @@ import { Router } from "express";
 import { z } from "zod";
 import { env } from "../env";
 import { signAccessToken, signRefreshToken, verifyRefreshToken } from "../lib/jwt";
+import { generatePasswordResetToken, verifyPasswordResetToken, revokePasswordResetToken } from "../lib/passwordReset";
+import { sendPasswordResetEmail } from "../lib/email";
 import { prisma } from "../lib/prisma";
 import { requireAuth } from "../middlewares/auth";
 
@@ -232,6 +234,80 @@ router.put("/profile", requireAuth, async (req: Request, res: Response) => {
   } catch (error) {
     console.error("PUT /auth/profile error", error);
     return res.status(500).json({ message: "Erro ao atualizar perfil" });
+  }
+});
+
+router.post("/forgot-password", async (req: Request, res: Response) => {
+  try {
+    const { email } = (req.body ?? {}) as { email?: unknown };
+
+    if (typeof email !== "string" || !email.trim()) {
+      return res.status(400).json({ message: "E-mail é obrigatório" });
+    }
+
+    const user = await prisma.user.findUnique({ where: { email: email.trim().toLowerCase() } });
+
+    // Não revela se o e-mail existe ou não (por segurança)
+    if (!user) {
+      return res.json({ message: "Se o e-mail existe, você receberá um link de recuperação." });
+    }
+
+    const resetToken = await generatePasswordResetToken(user.id);
+    await sendPasswordResetEmail(user.email, resetToken);
+
+    return res.json({ message: "Se o e-mail existe, você receberá um link de recuperação." });
+  } catch (error) {
+    console.error("POST /auth/forgot-password error", error);
+    return res.status(500).json({ message: "Erro ao processar recuperação de senha" });
+  }
+});
+
+router.post("/reset-password", async (req: Request, res: Response) => {
+  try {
+    const { token, password } = (req.body ?? {}) as { token?: unknown; password?: unknown };
+
+    if (typeof token !== "string" || !token.trim()) {
+      return res.status(400).json({ message: "Token inválido" });
+    }
+
+    if (typeof password !== "string" || password.length < 8 || password.length > 128) {
+      return res.status(400).json({ message: "Senha deve ter entre 8 e 128 caracteres" });
+    }
+
+    const userId = await verifyPasswordResetToken(token.trim());
+    if (!userId) {
+      return res.status(401).json({ message: "Link de recuperação inválido ou expirado" });
+    }
+
+    const passwordHash = await bcrypt.hash(password, 12);
+
+    await prisma.user.update({
+      where: { id: userId },
+      data: { passwordHash },
+    });
+
+    await revokePasswordResetToken(token.trim());
+
+    return res.json({ message: "Senha atualizada com sucesso. Faça login novamente." });
+  } catch (error) {
+    console.error("POST /auth/reset-password error", error);
+    return res.status(500).json({ message: "Erro ao atualizar senha" });
+  }
+});
+
+router.get("/verify-reset-token", async (req: Request, res: Response) => {
+  try {
+    const { token } = req.query;
+
+    if (typeof token !== "string" || !token.trim()) {
+      return res.status(400).json({ valid: false });
+    }
+
+    const userId = await verifyPasswordResetToken(token.trim());
+    return res.json({ valid: userId !== null });
+  } catch (error) {
+    console.error("GET /auth/verify-reset-token error", error);
+    return res.status(500).json({ valid: false });
   }
 });
 

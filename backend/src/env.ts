@@ -12,8 +12,8 @@ const envSchema = z.object({
   REFRESH_TTL: z.string().default("7d"),
   CORS_ORIGIN: z.string().min(1, "CORS_ORIGIN is required"),
   FRONTEND_URL: z.string().default("http://localhost:3000"),
-  SENDGRID_API_KEY: z.string().optional(),
-  SENDGRID_FROM_EMAIL: z.string().optional(),
+  MAILERSAND_API_KEY: z.string().optional(),
+  MAILERSAND_FROM_EMAIL: z.string().optional(),
   PORT: z.coerce.number().default(4000)
 });
 

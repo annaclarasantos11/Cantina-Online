@@ -2,10 +2,11 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense } from "react";
 import { ArrowLeft } from "lucide-react";
 import { ResetPasswordClient } from "./ResetPasswordClient";
 
-export default function ResetPasswordPage() {
+function ResetPasswordContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const token = searchParams.get("token");
@@ -72,5 +73,23 @@ export default function ResetPasswordPage() {
         </div>
       </div>
     </section>
+  );
+}
+
+export default function ResetPasswordPage() {
+  return (
+    <Suspense
+      fallback={
+        <section className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-orange-50/30">
+          <div className="container flex items-center justify-center px-4 py-12">
+            <div className="w-full max-w-sm rounded-3xl border border-gray-100 bg-white/80 px-6 py-16 text-center text-sm text-gray-600 shadow-sm">
+              Carregando...
+            </div>
+          </div>
+        </section>
+      }
+    >
+      <ResetPasswordContent />
+    </Suspense>
   );
 }

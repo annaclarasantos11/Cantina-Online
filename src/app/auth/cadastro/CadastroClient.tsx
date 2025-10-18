@@ -1,8 +1,10 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { Eye, EyeOff, Loader2, Check } from "lucide-react";
+
+import { fetchWithTimeout } from "@/lib/http";
 
 function validateEmail(v: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
@@ -18,45 +20,164 @@ export default function CadastroClient() {
   const [show1, setShow1] = useState(false);
   const [show2, setShow2] = useState(false);
 
-  const [loading, setLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [done, setDone] = useState(false);
+  const [banner, setBanner] = useState<string | null>(null);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
-  const [errors, setErrors] = useState<{
+  const [clientErrors, setClientErrors] = useState<{
     name?: string;
     email?: string;
     pass?: string;
     confirm?: string;
     agree?: string;
   }>({});
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   const alertRef = useRef<HTMLDivElement | null>(null);
 
   function validate() {
-    const e: typeof errors = {};
+    const e: typeof clientErrors = {};
     if (name.trim().length < 2) e.name = "Informe seu nome completo.";
     if (!validateEmail(email.trim())) e.email = "Informe um e-mail válido.";
     if (pass.trim().length < 8) e.pass = "A senha deve ter pelo menos 8 caracteres.";
     if (confirm !== pass) e.confirm = "As senhas não conferem.";
     if (!agree) e.agree = "Você precisa aceitar os termos para continuar.";
-    setErrors(e);
+    setClientErrors(e);
     return Object.keys(e).length === 0;
   }
 
   async function onSubmit(ev: React.FormEvent) {
     ev.preventDefault();
     if (!validate()) {
-      alertRef.current?.focus();
+      setSubmitError(null);
+      setTimeout(() => alertRef.current?.focus(), 0);
       return;
     }
-    setLoading(true);
-    await new Promise((r) => setTimeout(r, 1000));
-    setLoading(false);
-    setDone(true);
+
+    setSubmitError(null);
+    setBanner(null);
+    setDone(false);
+    setFieldErrors({});
+    setIsSubmitting(true);
+
+    const payload = {
+      name: name.trim(),
+      email: email.trim(),
+      password: pass,
+      type: "aluno",
+    };
+
+    try {
+      const response = await fetchWithTimeout("/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+        timeoutMs: 8000,
+      });
+
+      if (!response.ok) {
+        let message = "Não foi possível concluir o cadastro agora. Tente novamente.";
+        let data: any = null;
+        try {
+          data = await response.json();
+        } catch {}
+
+        if (response.status === 400 || response.status === 409) {
+          if (data?.message) {
+            message = String(data.message);
+          }
+          if (data?.fieldErrors && typeof data.fieldErrors === "object") {
+            setFieldErrors(data.fieldErrors as Record<string, string>);
+          }
+        } else if (response.status >= 500) {
+          message = "Servidor indisponível. Tente novamente em instantes.";
+        }
+
+        setSubmitError(message);
+        setTimeout(() => alertRef.current?.focus(), 0);
+        return;
+      }
+
+      setBanner("Conta criada! Agora você já pode entrar.");
+      setDone(true);
+    } catch (error: unknown) {
+      const err = error as { name?: string };
+      const aborted = err?.name === "AbortError";
+      setSubmitError(
+        aborted
+          ? "Tempo de resposta esgotado. Tente novamente."
+          : "Serviço de cadastro temporariamente indisponível. Verifique sua conexão ou tente mais tarde."
+      );
+      setTimeout(() => alertRef.current?.focus(), 0);
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   useEffect(() => {
-    setErrors({});
-  }, [name, email, pass, confirm, agree]);
+    if (clientErrors.name || fieldErrors.name) {
+      setClientErrors((prev) => ({ ...prev, name: undefined }));
+      setFieldErrors((prev) => {
+        if (!prev.name) return prev;
+        const { name: _, ...rest } = prev;
+        return rest;
+      });
+    }
+  }, [name, clientErrors.name, fieldErrors.name]);
+
+  useEffect(() => {
+    if (clientErrors.email || fieldErrors.email) {
+      setClientErrors((prev) => ({ ...prev, email: undefined }));
+      setFieldErrors((prev) => {
+        if (!prev.email) return prev;
+        const { email: _, ...rest } = prev;
+        return rest;
+      });
+    }
+  }, [email, clientErrors.email, fieldErrors.email]);
+
+  useEffect(() => {
+    if (clientErrors.pass || fieldErrors.pass) {
+      setClientErrors((prev) => ({ ...prev, pass: undefined }));
+      setFieldErrors((prev) => {
+        if (!prev.pass) return prev;
+        const { pass: _, ...rest } = prev;
+        return rest;
+      });
+    }
+  }, [pass, clientErrors.pass, fieldErrors.pass]);
+
+  useEffect(() => {
+    if (clientErrors.confirm || fieldErrors.confirm) {
+      setClientErrors((prev) => ({ ...prev, confirm: undefined }));
+      setFieldErrors((prev) => {
+        if (!prev.confirm) return prev;
+        const { confirm: _, ...rest } = prev;
+        return rest;
+      });
+    }
+  }, [confirm, clientErrors.confirm, fieldErrors.confirm]);
+
+  useEffect(() => {
+    if (clientErrors.agree || fieldErrors.agree) {
+      setClientErrors((prev) => ({ ...prev, agree: undefined }));
+      setFieldErrors((prev) => {
+        if (!prev.agree) return prev;
+        const { agree: _, ...rest } = prev;
+        return rest;
+      });
+    }
+  }, [agree, clientErrors.agree, fieldErrors.agree]);
+
+  const combinedErrors = useMemo(() => {
+    const values = [
+      ...Object.values(clientErrors).filter(Boolean),
+      ...Object.values(fieldErrors).filter(Boolean),
+    ] as string[];
+    if (submitError) values.push(submitError);
+    return values.join(". ");
+  }, [clientErrors, fieldErrors, submitError]);
 
   return (
     <section className="min-h-[100svh] bg-gradient-to-br from-white via-orange-50/40 to-orange-100/30">
@@ -89,6 +210,12 @@ export default function CadastroClient() {
                 <p className="mt-1 text-sm text-gray-600">Preencha os dados para começar a fazer pedidos.</p>
               </header>
 
+              {banner ? (
+                <div className="mb-4 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-700" role="status">
+                  {banner}
+                </div>
+              ) : null}
+
               <div
                 ref={alertRef}
                 tabIndex={-1}
@@ -96,7 +223,7 @@ export default function CadastroClient() {
                 aria-live="assertive"
                 aria-atomic="true"
               >
-                {Object.values(errors).filter(Boolean).join(". ")}
+                {combinedErrors}
               </div>
 
               {done ? (
@@ -112,24 +239,25 @@ export default function CadastroClient() {
                   </div>
                 </div>
               ) : (
-                <form onSubmit={onSubmit} className="space-y-4">
+                <form onSubmit={onSubmit} className="space-y-4" aria-busy={isSubmitting}>
                   <div>
                     <label htmlFor="name" className="block text-sm font-medium text-gray-800">
                       Nome completo
                     </label>
                     <input
                       id="name"
+                      disabled={isSubmitting}
                       value={name}
                       onChange={(e) => setName(e.target.value)}
                       autoComplete="name"
                       className="mt-1 w-full rounded-2xl border border-gray-200 bg-white px-3 py-2 text-sm outline-none transition focus:border-orange-500 focus:ring-2 focus:ring-orange-100"
-                      aria-invalid={!!errors.name}
-                      aria-describedby={errors.name ? "name-err" : undefined}
+                      aria-invalid={Boolean(clientErrors.name || fieldErrors.name)}
+                      aria-describedby={clientErrors.name || fieldErrors.name ? "name-err" : undefined}
                       placeholder="Ex.: Maria Oliveira"
                     />
-                    {errors.name ? (
+                    {clientErrors.name || fieldErrors.name ? (
                       <p id="name-err" className="mt-1 text-xs text-red-600">
-                        {errors.name}
+                        {clientErrors.name || fieldErrors.name}
                       </p>
                     ) : null}
                   </div>
@@ -141,17 +269,18 @@ export default function CadastroClient() {
                     <input
                       id="email"
                       type="email"
+                      disabled={isSubmitting}
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       autoComplete="email"
                       className="mt-1 w-full rounded-2xl border border-gray-200 bg-white px-3 py-2 text-sm outline-none transition focus:border-orange-500 focus:ring-2 focus:ring-orange-100"
-                      aria-invalid={!!errors.email}
-                      aria-describedby={errors.email ? "email-err" : undefined}
+                      aria-invalid={Boolean(clientErrors.email || fieldErrors.email)}
+                      aria-describedby={clientErrors.email || fieldErrors.email ? "email-err" : undefined}
                       placeholder="voce@exemplo.com"
                     />
-                    {errors.email ? (
+                    {clientErrors.email || fieldErrors.email ? (
                       <p id="email-err" className="mt-1 text-xs text-red-600">
-                        {errors.email}
+                        {clientErrors.email || fieldErrors.email}
                       </p>
                     ) : null}
                   </div>
@@ -164,12 +293,13 @@ export default function CadastroClient() {
                       <input
                         id="pass"
                         type={show1 ? "text" : "password"}
+                        disabled={isSubmitting}
                         value={pass}
                         onChange={(e) => setPass(e.target.value)}
                         autoComplete="new-password"
                         className="w-full rounded-2xl border border-gray-200 bg-white px-3 py-2 pr-12 text-sm outline-none transition focus:border-orange-500 focus:ring-2 focus:ring-orange-100"
-                        aria-invalid={!!errors.pass}
-                        aria-describedby={errors.pass ? "pass-err" : undefined}
+                        aria-invalid={Boolean(clientErrors.pass || fieldErrors.pass)}
+                        aria-describedby={clientErrors.pass || fieldErrors.pass ? "pass-err" : undefined}
                         placeholder="Mínimo de 8 caracteres"
                       />
                       <button
@@ -181,9 +311,9 @@ export default function CadastroClient() {
                         {show1 ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                       </button>
                     </div>
-                    {errors.pass ? (
+                    {clientErrors.pass || fieldErrors.pass ? (
                       <p id="pass-err" className="mt-1 text-xs text-red-600">
-                        {errors.pass}
+                        {clientErrors.pass || fieldErrors.pass}
                       </p>
                     ) : null}
                   </div>
@@ -196,12 +326,13 @@ export default function CadastroClient() {
                       <input
                         id="confirm"
                         type={show2 ? "text" : "password"}
+                        disabled={isSubmitting}
                         value={confirm}
                         onChange={(e) => setConfirm(e.target.value)}
                         autoComplete="new-password"
                         className="w-full rounded-2xl border border-gray-200 bg-white px-3 py-2 pr-12 text-sm outline-none transition focus:border-orange-500 focus:ring-2 focus:ring-orange-100"
-                        aria-invalid={!!errors.confirm}
-                        aria-describedby={errors.confirm ? "confirm-err" : undefined}
+                        aria-invalid={Boolean(clientErrors.confirm || fieldErrors.confirm)}
+                        aria-describedby={clientErrors.confirm || fieldErrors.confirm ? "confirm-err" : undefined}
                         placeholder="Repita sua senha"
                       />
                       <button
@@ -213,9 +344,9 @@ export default function CadastroClient() {
                         {show2 ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                       </button>
                     </div>
-                    {errors.confirm ? (
+                    {clientErrors.confirm || fieldErrors.confirm ? (
                       <p id="confirm-err" className="mt-1 text-xs text-red-600">
-                        {errors.confirm}
+                        {clientErrors.confirm || fieldErrors.confirm}
                       </p>
                     ) : null}
                   </div>
@@ -223,6 +354,7 @@ export default function CadastroClient() {
                   <label className="flex items-start gap-3 rounded-2xl border border-gray-200 bg-white/90 p-4 text-sm text-gray-700">
                     <input
                       type="checkbox"
+                      disabled={isSubmitting}
                       checked={agree}
                       onChange={(e) => setAgree(e.target.checked)}
                       className="mt-0.5 h-4 w-4 rounded border-gray-300 text-orange-600 focus:ring-orange-500"
@@ -235,15 +367,23 @@ export default function CadastroClient() {
                       .
                     </span>
                   </label>
-                  {errors.agree ? <p className="text-xs text-red-600">{errors.agree}</p> : null}
+                  {clientErrors.agree || fieldErrors.agree ? (
+                    <p className="text-xs text-red-600">{clientErrors.agree || fieldErrors.agree}</p>
+                  ) : null}
+
+                  {submitError ? (
+                    <p role="alert" className="text-sm text-red-600">
+                      {submitError}
+                    </p>
+                  ) : null}
 
                   <button
                     type="submit"
-                    disabled={loading}
+                    disabled={isSubmitting}
                     className="btn btn-primary w-full justify-center"
                   >
-                    {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                    Criar conta
+                    {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                    {isSubmitting ? "Cadastrando..." : "Criar conta"}
                   </button>
                 </form>
               )}

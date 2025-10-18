@@ -52,13 +52,15 @@ function buildUserPayload(user: { id: number; name: string | null; email: string
 }
 
 function setRefreshCookie(res: Response, token: string) {
+  const isProduction = env.NODE_ENV === "production";
   res.cookie("refresh_token", token, {
     httpOnly: true,
-    secure: env.NODE_ENV === "production",
-    sameSite: "lax",
+    secure: isProduction,
+    sameSite: isProduction ? "strict" : "none",
     maxAge: ttlToMs(env.REFRESH_TTL),
     path: "/",
   });
+  console.log(`[DEBUG] Cookie set - secure: ${isProduction}, sameSite: ${isProduction ? "strict" : "none"}`);
 }
 
 router.post("/register", async (req: Request, res: Response) => {
@@ -85,6 +87,7 @@ router.post("/register", async (req: Request, res: Response) => {
     const refreshToken = signRefreshToken(payload);
 
     setRefreshCookie(res, refreshToken);
+    console.log(`[INFO] User ${user.id} registered. Refresh token cookie set.`);
 
     return res.status(201).json({
       user: buildUserPayload(user),
@@ -123,6 +126,7 @@ router.post("/login", async (req: Request, res: Response) => {
   const refreshToken = signRefreshToken(payload);
 
   setRefreshCookie(res, refreshToken);
+  console.log(`[INFO] User ${user.id} logged in. Refresh token cookie set.`);
 
   return res.json({
     user: buildUserPayload(user),

@@ -12,12 +12,10 @@ const envSchema = z.object({
   REFRESH_TTL: z.string().default("7d"),
   CORS_ORIGIN: z.string().min(1, "CORS_ORIGIN is required"),
   FRONTEND_URL: z.string().default("http://localhost:3000"),
-  SMTP_HOST: z.string().optional(),
-  SMTP_PORT: z.coerce.number().optional(),
-  SMTP_SECURE: z.string().optional(),
-  SMTP_USER: z.string().optional(),
-  SMTP_PASS: z.string().optional(),
-  SMTP_FROM: z.string().optional(),
+  AWS_REGION: z.string().optional(),
+  AWS_ACCESS_KEY_ID: z.string().optional(),
+  AWS_SECRET_ACCESS_KEY: z.string().optional(),
+  AWS_SES_FROM_EMAIL: z.string().optional(),
   PORT: z.coerce.number().default(4000)
 });
 

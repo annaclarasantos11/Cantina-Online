@@ -5,6 +5,8 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { LogOut, Ticket, UserCircle2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { OrdersHistory } from "./components/OrdersHistory";
+import { ProfileForm } from "./components/ProfileForm";
 
 export default function PerfilPage() {
   const router = useRouter();
@@ -73,6 +75,23 @@ export default function PerfilPage() {
             <Link href="/menu" className="inline-flex items-center justify-between rounded-2xl border border-gray-200 bg-white/90 p-4 text-sm font-semibold text-gray-800 shadow-sm transition hover:translate-y-[-2px] hover:shadow-md">
               Voltar ao cardápio
             </Link>
+          </div>
+
+          <div className="mt-12 border-t border-gray-100 pt-8">
+            <ProfileForm />
+          </div>
+
+          <div className="mt-12 border-t border-gray-100 pt-8">
+            <header className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <h2 className="text-xl font-semibold text-gray-900">Histórico de pedidos</h2>
+                <p className="text-sm text-gray-600">Acompanhe seus pedidos anteriores e confira os itens de cada um.</p>
+              </div>
+            </header>
+
+            <div className="mt-6">
+              <OrdersHistory userId={user.id} />
+            </div>
           </div>
         </div>
       </div>

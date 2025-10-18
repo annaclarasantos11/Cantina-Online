@@ -2,6 +2,66 @@ import { db } from "@/lib/prisma";
 import type { Prisma } from "@prisma/client";
 import { NextResponse } from "next/server";
 
+export async function GET(req: Request) {
+  try {
+    const { searchParams } = new URL(req.url);
+    const userIdParam = searchParams.get("userId");
+
+    if (!userIdParam) {
+      return NextResponse.json({ message: "userId é obrigatório" }, { status: 400 });
+    }
+
+    const userId = Number(userIdParam);
+    if (!Number.isFinite(userId)) {
+      return NextResponse.json({ message: "userId inválido" }, { status: 400 });
+    }
+
+    const orders = await db.order.findMany({
+      where: { userId } as Prisma.OrderWhereInput,
+      include: {
+        items: {
+          include: {
+            product: {
+              select: {
+                name: true,
+                price: true,
+              },
+            },
+          },
+        },
+      },
+      orderBy: { createdAt: "desc" },
+    });
+
+    const payload = orders.map((order) => {
+      const items = order.items.map((it) => {
+        const unitPrice = Number(it.price ?? it.product?.price ?? 0);
+        const quantity = Number(it.quantity ?? 0);
+        const subtotal = unitPrice * quantity;
+        return {
+          id: it.id,
+          name: it.product?.name ?? "Produto",
+          quantity,
+          unitPrice,
+          subtotal,
+        };
+      });
+      const total = items.reduce((acc, item) => acc + item.subtotal, 0);
+      return {
+        id: order.id,
+        createdAt: order.createdAt,
+        total,
+        items,
+      };
+    });
+
+    return NextResponse.json(payload, { status: 200 });
+  } catch (error) {
+    console.error("GET /api/orders error", error);
+    return NextResponse.json({ message: "Erro ao listar pedidos" }, { status: 500 });
+  }
+}
+
 type Body = {
   name: string;
   note?: string;

@@ -6,7 +6,9 @@ import { getApiBaseUrl } from "@/lib/api";
 type AuthUser = { id: number; name: string; email: string; };
 type SignInInput = { email: string; password: string; remember?: boolean; };
 type SignInResult = { ok: true } | { ok: false; message?: string; fieldErrors?: Record<string, string> };
-type AuthContextShape = { user: AuthUser | null; accessToken: string | null; initializing: boolean; signIn: (input: SignInInput) => Promise<SignInResult>; signOut: () => Promise<void>; refreshProfile: () => Promise<void>; };
+type UpdateProfileInput = { name?: string; email?: string };
+type UpdateProfileResult = { ok: true; user: AuthUser } | { ok: false; message?: string };
+type AuthContextShape = { user: AuthUser | null; accessToken: string | null; initializing: boolean; signIn: (input: SignInInput) => Promise<SignInResult>; signOut: () => Promise<void>; refreshProfile: () => Promise<void>; updateProfile: (input: UpdateProfileInput) => Promise<UpdateProfileResult>; };
 type PersistMode = "local" | "session";
 
 const AuthContext = createContext<AuthContextShape | undefined>(undefined);
@@ -180,7 +182,69 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     resetAuth();
   }, [apiBase, resetAuth]);
 
-  const value: AuthContextShape = useMemo(() => ({ user, accessToken, initializing, signIn, signOut, refreshProfile: safeRefreshProfile }), [user, accessToken, initializing, signIn, signOut, safeRefreshProfile]);
+  const updateProfile = useCallback(async ({ name, email }: UpdateProfileInput): Promise<UpdateProfileResult> => {
+    const payload: Record<string, string> = {};
+    if (typeof name === "string" && name.trim()) payload.name = name.trim();
+    if (typeof email === "string" && email.trim()) payload.email = email.trim();
+
+    const runRequest = async (tokenToUse: string) =>
+      fetch(`${apiBase}/auth/profile`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${tokenToUse}` },
+        credentials: "include",
+        body: JSON.stringify(payload),
+      });
+
+    const ensureToken = async (): Promise<string | null> => {
+      if (accessTokenRef.current) return accessTokenRef.current;
+      try {
+        const fresh = await refreshToken();
+        return fresh;
+      } catch {
+        return null;
+      }
+    };
+
+    let currentToken = await ensureToken();
+    if (!currentToken) {
+      return { ok: false, message: "Sessão expirada. Faça login novamente." };
+    }
+
+    let res = await runRequest(currentToken);
+    if (res.status === 401) {
+      try {
+        currentToken = await refreshToken();
+        res = await runRequest(currentToken);
+      } catch {
+        return { ok: false, message: "Sessão expirada. Faça login novamente." };
+      }
+    }
+
+    const data = await res.json().catch(() => null);
+    if (!res.ok) {
+      const message = typeof data?.message === "string" ? data.message : "Não foi possível atualizar o perfil.";
+      return { ok: false, message };
+    }
+
+    const updatedUser = (data?.user ?? data) as AuthUser | undefined;
+    if (!updatedUser) {
+      return { ok: false, message: "Resposta inesperada do servidor." };
+    }
+
+    setUser(updatedUser);
+    userRef.current = updatedUser;
+
+    const persistedToken = accessTokenRef.current;
+    if (persistedToken) {
+      const mode = persistMode.current ?? "local";
+      persistMode.current = mode;
+      persistAuth({ user: updatedUser, accessToken: persistedToken }, mode);
+    }
+
+    return { ok: true, user: updatedUser };
+  }, [apiBase, persistAuth, refreshToken]);
+
+  const value: AuthContextShape = useMemo(() => ({ user, accessToken, initializing, signIn, signOut, refreshProfile: safeRefreshProfile, updateProfile }), [user, accessToken, initializing, signIn, signOut, safeRefreshProfile, updateProfile]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

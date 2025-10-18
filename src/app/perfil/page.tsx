@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { LogOut, Ticket, UserCircle2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { OrdersHistory } from "./components/OrdersHistory";
+import { ProfileForm } from "./components/ProfileForm";
 
 export default function PerfilPage() {
   const router = useRouter();
@@ -74,6 +75,10 @@ export default function PerfilPage() {
             <Link href="/menu" className="inline-flex items-center justify-between rounded-2xl border border-gray-200 bg-white/90 p-4 text-sm font-semibold text-gray-800 shadow-sm transition hover:translate-y-[-2px] hover:shadow-md">
               Voltar ao cardápio
             </Link>
+          </div>
+
+          <div className="mt-12 border-t border-gray-100 pt-8">
+            <ProfileForm />
           </div>
 
           <div className="mt-12 border-t border-gray-100 pt-8">

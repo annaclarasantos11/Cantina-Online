@@ -137,9 +137,6 @@ router.post("/refresh", async (req: Request, res: Response) => {
 
   try {
     const payload = verifyRefreshToken(token);
-    if (payload.type !== "refresh") {
-      return res.status(401).json({ message: "Invalid refresh token" });
-    }
 
     const user = await prisma.user.findUnique({ where: { id: Number(payload.sub) } });
 
@@ -181,6 +178,61 @@ router.get("/me", requireAuth, async (req: Request, res: Response) => {
   }
 
   return res.json({ user: buildUserPayload(user) });
+});
+
+router.put("/profile", requireAuth, async (req: Request, res: Response) => {
+  try {
+    const authUserId = req.userId ?? Number(req.user?.sub ?? NaN);
+    if (!Number.isFinite(authUserId)) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    const { name, email } = (req.body ?? {}) as { name?: unknown; email?: unknown };
+
+    const updateData: { name?: string; email?: string } = {};
+
+    if (typeof name === "string" && name.trim().length > 0) {
+      updateData.name = name.trim();
+    }
+
+    if (typeof email === "string") {
+      const trimmed = email.trim().toLowerCase();
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(trimmed)) {
+        return res.status(400).json({ message: "E-mail inválido" });
+      }
+      updateData.email = trimmed;
+    }
+
+    if (!updateData.name && !updateData.email) {
+      return res.status(400).json({ message: "Nenhum campo para atualizar" });
+    }
+
+    if (updateData.email) {
+      const already = await prisma.user.findFirst({
+        where: {
+          email: updateData.email,
+          NOT: { id: authUserId },
+        },
+        select: { id: true },
+      });
+
+      if (already) {
+        return res.status(409).json({ message: "E-mail já em uso" });
+      }
+    }
+
+    const updated = await prisma.user.update({
+      where: { id: authUserId },
+      data: updateData,
+      select: { id: true, name: true, email: true },
+    });
+
+    return res.json({ user: buildUserPayload(updated) });
+  } catch (error) {
+    console.error("PUT /auth/profile error", error);
+    return res.status(500).json({ message: "Erro ao atualizar perfil" });
+  }
 });
 
 export const authRoutes = router;

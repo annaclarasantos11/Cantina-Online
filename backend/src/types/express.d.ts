@@ -1,10 +1,11 @@
-import type { JwtPayload } from "../lib/jwt";
+import type { TokenClaims } from "../lib/jwt";
 
 declare global {
   namespace Express {
     interface Request {
-      user?: JwtPayload;
+      user?: (TokenClaims & { id?: number });
       token?: string;
+      userId?: number;
     }
   }
 }

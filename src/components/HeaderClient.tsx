@@ -3,13 +3,12 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import type { Route } from 'next';
 import { ShoppingCart, Menu, X, LogOut, Search, Clock, Phone } from 'lucide-react';
 
 import { useCart } from '@/contexts/CartContext';
 import { useAuth } from '@/contexts/AuthContext';
 
-const nav: Array<{ href: Route; label: string }> = [
+const navItems = [
   { href: '/', label: 'Início' },
   { href: '/menu', label: 'Menu' },
   { href: '/horarios', label: 'Horários' },
@@ -25,6 +24,7 @@ export default function HeaderClient() {
   const [openUserMenu, setOpenUserMenu] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const userMenuRef = useRef<HTMLDivElement | null>(null);
+  const mobileMenuId = 'header-mobile-menu';
 
   useEffect(() => {
     if (!initializing && !user) {
@@ -60,7 +60,14 @@ export default function HeaderClient() {
     setOpenUserMenu(false);
   }, [pathname]);
 
-  const isActive = (href: string) => pathname === href;
+  const isActive = (href: string) =>
+    pathname === href || (href !== '/' && pathname?.startsWith(`${href}/`));
+  const linkClass = (active: boolean) =>
+    [
+      'px-3 py-2 rounded-xl text-sm font-medium transition',
+      active ? 'bg-blue-50 text-blue-700' : 'text-gray-700 hover:bg-gray-50',
+      'focus:outline-none focus:ring',
+    ].join(' ');
 
   const userInitial = useMemo(() => {
     if (!user) return '?';
@@ -238,6 +245,8 @@ export default function HeaderClient() {
                 onClick={() => setOpenMobile((v) => !v)}
                 className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-white px-3 py-2 text-sm font-semibold text-gray-700 shadow-sm transition hover:border-orange-300 hover:text-orange-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-orange-600 md:hidden"
                 aria-label={openMobile ? 'Fechar menu' : 'Abrir menu'}
+                aria-expanded={openMobile}
+                aria-controls={mobileMenuId}
               >
                 {openMobile ? <X className="h-4 w-4" aria-hidden /> : <Menu className="h-4 w-4" aria-hidden />}
                 Menu
@@ -262,28 +271,17 @@ export default function HeaderClient() {
 
       <div className="hidden border-b border-orange-100 bg-white/80 md:block">
         <div className="container mx-auto flex max-w-7xl items-center justify-between px-4 py-3">
-          <nav aria-label="Principal" className="flex items-center gap-6">
-            {nav.map((item) => {
-              const active = isActive(item.href);
-              return (
-                <Link
-                  key={item.href}
-                  href={{ pathname: item.href }}
-                  aria-current={active ? 'page' : undefined}
-                  className={`group relative px-1 text-sm font-semibold transition ${
-                    active ? 'text-orange-700' : 'text-gray-600 hover:text-orange-700'
-                  }`}
-                >
-                  {item.label}
-                  <span
-                    className={`absolute inset-x-0 -bottom-1 h-0.5 origin-center rounded-full bg-orange-500 transition-transform duration-200 ${
-                      active ? 'scale-100' : 'scale-0 group-hover:scale-100'
-                    }`}
-                    aria-hidden
-                  />
-                </Link>
-              );
-            })}
+          <nav aria-label="Principal" className="hidden md:flex items-center gap-1">
+            {navItems.map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={linkClass(isActive(item.href))}
+                aria-current={isActive(item.href) ? 'page' : undefined}
+              >
+                {item.label}
+              </Link>
+            ))}
           </nav>
 
           <div className="flex items-center gap-2 text-sm font-medium text-gray-500">
@@ -294,70 +292,62 @@ export default function HeaderClient() {
       </div>
 
       {openMobile && (
-        <div className="border-t border-orange-100 bg-white/95 shadow-lg md:hidden">
+  <div className="border-t border-orange-100 bg-white/95 shadow-lg md:hidden" id={mobileMenuId}>
           <nav aria-label="Principal (mobile)" className="container mx-auto max-w-7xl px-4 py-3">
-            <ul className="flex flex-col gap-2">
-              {nav.map((item) => {
-                const active = isActive(item.href);
-                return (
-                  <li key={item.href}>
-                    <Link
-                      href={{ pathname: item.href }}
-                      onClick={() => setOpenMobile(false)}
-                      aria-current={active ? 'page' : undefined}
-                      className={`flex items-center justify-between rounded-lg border px-3 py-2 text-sm font-medium transition ${
-                        active
-                          ? 'border-orange-500 bg-orange-50 text-orange-700'
-                          : 'border-transparent text-gray-700 hover:border-orange-200 hover:bg-orange-50/60'
-                      }`}
-                    >
-                      {item.label}
-                      {active ? <span className="text-xs uppercase text-orange-500">Agora</span> : null}
-                    </Link>
-                  </li>
-                );
-              })}
-              <li className="border-t border-orange-100 pt-3">
-                {user ? (
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-3">
-                      <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-orange-600 text-base font-semibold text-white">
-                        {userInitial}
-                      </span>
-                      <div>
-                        <p className="text-sm font-semibold text-gray-800">{userDisplayName}</p>
-                        <p className="text-xs text-gray-500">{user.email}</p>
-                      </div>
+            <div className="md:hidden grid gap-1">
+              {navItems.map((item) => (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={linkClass(isActive(item.href))}
+                  aria-current={isActive(item.href) ? 'page' : undefined}
+                  onClick={() => setOpenMobile(false)}
+                >
+                  {item.label}
+                </Link>
+              ))}
+            </div>
+
+            <div className="mt-3 border-t border-orange-100 pt-3">
+              {user ? (
+                <div className="space-y-3">
+                  <div className="flex items-center gap-3">
+                    <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-orange-600 text-base font-semibold text-white">
+                      {userInitial}
+                    </span>
+                    <div>
+                      <p className="text-sm font-semibold text-gray-800">{userDisplayName}</p>
+                      <p className="text-xs text-gray-500">{user.email}</p>
                     </div>
-                    <Link
-                      href="/perfil"
-                      onClick={() => setOpenMobile(false)}
-                      className="block rounded-lg border border-gray-200 px-3 py-2 text-sm font-medium text-gray-700 transition hover:border-orange-300 hover:text-orange-700"
-                    >
-                      Meu perfil
-                    </Link>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setOpenMobile(false);
-                        signOut();
-                      }}
-                      className="w-full rounded-lg border border-red-200 px-3 py-2 text-sm font-semibold text-red-600 transition hover:border-red-300 hover:bg-red-50"
-                    >
-                      Sair
-                    </button>
                   </div>
-                ) : (
                   <Link
-                    href={{ pathname: '/auth/login' }}
+                    href="/perfil"
                     onClick={() => setOpenMobile(false)}
-                    className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-orange-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-orange-600"
+                    className="block rounded-lg border border-gray-200 px-3 py-2 text-sm font-medium text-gray-700 transition hover:border-orange-300 hover:text-orange-700"
                   >
-                    Entrar
+                    Meu perfil
                   </Link>
-                )}
-              </li>
-            </ul>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setOpenMobile(false);
+                      signOut();
+                    }}
+                    className="w-full rounded-lg border border-red-200 px-3 py-2 text-sm font-semibold text-red-600 transition hover:border-red-300 hover:bg-red-50"
+                  >
+                    Sair
+                  </button>
+                </div>
+              ) : (
+                <Link
+                  href={{ pathname: '/auth/login' }}
+                  onClick={() => setOpenMobile(false)}
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-orange-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-orange-600"
+                >
+                  Entrar
+                </Link>
+              )}
+            </div>
           </nav>
         </div>
       )}

@@ -4,10 +4,14 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 
+import { useAuth } from "@/contexts/AuthContext";
+
 export default function SplashIntro() {
   const router = useRouter();
   const [auto, setAuto] = useState(true);
   const timerRef = useRef<number | null>(null);
+  const { user, initializing } = useAuth();
+  const isAuthenticated = Boolean(user);
 
   useEffect(() => {
     if (!auto) return;
@@ -66,19 +70,38 @@ export default function SplashIntro() {
           </p>
 
           {/* CTAs */}
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
-            <button 
-              onClick={() => router.push('/menu')} 
-              className="btn btn-primary px-6 py-3 text-lg w-full sm:w-auto"
-            >
-              Entrar no cardápio
-            </button>
-            <Link 
-              href="/sobre" 
-              className="btn btn-outline px-6 py-3 text-lg w-full sm:w-auto"
-            >
-              Regras & horários
-            </Link>
+          <div className="flex w-full flex-col items-center justify-center gap-4 pt-4 sm:flex-row">
+            {initializing ? (
+              <div className="flex w-full max-w-md flex-col gap-3 sm:flex-row">
+                <span className="h-12 flex-1 animate-pulse rounded-xl bg-gray-200" aria-hidden="true" />
+                <span className="h-12 flex-1 animate-pulse rounded-xl bg-gray-200" aria-hidden="true" />
+              </div>
+            ) : isAuthenticated ? (
+              <Link
+                href="/menu"
+                aria-label="Ir diretamente para o menu"
+                className="inline-flex w-full max-w-md items-center justify-center rounded-xl bg-blue-600 px-5 py-3 text-base font-semibold text-white shadow transition hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-200 focus:ring-offset-2 focus:ring-offset-white"
+              >
+                Ir para o menu
+              </Link>
+            ) : (
+              <div className="flex w-full max-w-2xl flex-col gap-3 sm:flex-row">
+                <Link
+                  href="/auth/login"
+                  aria-label="Entrar com a sua conta"
+                  className="inline-flex w-full items-center justify-center rounded-xl bg-blue-600 px-5 py-3 text-base font-semibold text-white shadow transition hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-200 focus:ring-offset-2 focus:ring-offset-white"
+                >
+                  Entrar
+                </Link>
+                <Link
+                  href="/auth/cadastro"
+                  aria-label="Criar uma nova conta na Cantina Online"
+                  className="inline-flex w-full items-center justify-center rounded-xl border border-blue-600 px-5 py-3 text-base font-semibold text-blue-600 shadow-sm transition hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-blue-200 focus:ring-offset-2 focus:ring-offset-white"
+                >
+                  Criar conta
+                </Link>
+              </div>
+            )}
           </div>
 
           {/* Botão "Não redirecionar" */}

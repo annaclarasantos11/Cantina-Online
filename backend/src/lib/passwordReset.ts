@@ -1,5 +1,8 @@
-import { prisma } from "./prisma";
+import { prisma as basePrisma } from "./prisma";
 import crypto from "crypto";
+
+// Cast Prisma client to include passwordResetToken
+const prisma = basePrisma as any;
 
 export async function generatePasswordResetToken(userId: number): Promise<string> {
   // Gera um token aleatório seguro

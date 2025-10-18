@@ -5,8 +5,12 @@ declare global {
   var prisma: PrismaClient | undefined;
 }
 
-export const prisma = globalThis.prisma ?? new PrismaClient();
+const client = globalThis.prisma ?? new PrismaClient();
 
 if (process.env.NODE_ENV !== "production") {
-  globalThis.prisma = prisma;
+  globalThis.prisma = client;
 }
+
+export const prisma = client as PrismaClient & {
+  passwordResetToken: any;
+};

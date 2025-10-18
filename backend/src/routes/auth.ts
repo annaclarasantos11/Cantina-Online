@@ -133,27 +133,37 @@ router.post("/login", async (req: Request, res: Response) => {
 router.post("/refresh", async (req: Request, res: Response) => {
   const token = req.cookies?.["refresh_token"];
 
+  console.log("[DEBUG] Refresh endpoint called");
+  console.log("[DEBUG] Cookies received:", Object.keys(req.cookies || {}));
+  console.log("[DEBUG] Refresh token present:", !!token);
+
   if (!token) {
+    console.log("[DEBUG] Refresh token missing");
     return res.status(401).json({ message: "Refresh token missing" });
   }
 
   try {
     const payload = verifyRefreshToken(token);
+    console.log("[DEBUG] Refresh token verified. User ID:", payload.sub);
 
     const user = await prisma.user.findUnique({ where: { id: Number(payload.sub) } });
 
     if (!user) {
+      console.log("[DEBUG] User not found for ID:", payload.sub);
       return res.status(401).json({ message: "User not found" });
     }
 
-  const newPayload = { sub: String(user.id), email: user.email, name: user.name ?? "" };
+    console.log("[DEBUG] User found. Generating new tokens...");
+    const newPayload = { sub: String(user.id), email: user.email, name: user.name ?? "" };
     const accessToken = signAccessToken(newPayload);
     const refreshToken = signRefreshToken(newPayload);
 
     setRefreshCookie(res, refreshToken);
+    console.log("[DEBUG] New tokens generated and refresh cookie set");
 
     return res.json({ accessToken });
   } catch (error) {
+    console.error("[ERROR] Refresh token error:", error instanceof Error ? error.message : String(error));
     return res.status(401).json({ message: "Invalid or expired refresh token" });
   }
 });

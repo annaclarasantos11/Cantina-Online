@@ -54,16 +54,20 @@ function buildUserPayload(user: { id: number; name: string | null; email: string
 function setRefreshCookie(res: Response, token: string) {
   const isProduction = env.NODE_ENV === "production";
   
+  console.log(`[DEBUG] Setting refresh cookie...`);
+  console.log(`[DEBUG] NODE_ENV: ${env.NODE_ENV}`);
+  console.log(`[DEBUG] secure: ${isProduction}`);
+  console.log(`[DEBUG] sameSite: ${isProduction ? "strict" : "lax"}`);
+  
   res.cookie("refresh_token", token, {
     httpOnly: true,
     secure: isProduction,
-    // Em development: lax (mais permissivo, funciona com localhost)
-    // Em production: strict (mais seguro)
     sameSite: isProduction ? "strict" : "lax",
     maxAge: ttlToMs(env.REFRESH_TTL),
     path: "/",
   });
-  console.log(`[DEBUG] Cookie set - secure: ${isProduction}, sameSite: ${isProduction ? "strict" : "lax"}`);
+  
+  console.log(`[DEBUG] ✅ Refresh cookie configured`);
 }
 
 router.post("/register", async (req: Request, res: Response) => {
@@ -105,31 +109,37 @@ router.post("/register", async (req: Request, res: Response) => {
 });
 
 router.post("/login", async (req: Request, res: Response) => {
+  console.log("[DEBUG] Login endpoint called");
   const result = loginSchema.safeParse(req.body);
   if (!result.success) {
+    console.log("[DEBUG] Invalid login payload");
     return res.status(400).json({ message: "Invalid payload", errors: result.error.flatten() });
   }
 
   const { email, password } = result.data;
+  console.log(`[DEBUG] Login attempt for email: ${email}`);
 
   const user = await prisma.user.findUnique({ where: { email } });
 
   if (!user) {
+    console.log(`[DEBUG] User not found: ${email}`);
     return res.status(401).json({ message: "Invalid credentials" });
   }
 
   const match = await bcrypt.compare(password, user.passwordHash);
 
   if (!match) {
+    console.log(`[DEBUG] Password mismatch for user: ${email}`);
     return res.status(401).json({ message: "Invalid credentials" });
   }
 
+  console.log(`[DEBUG] User ${user.id} authenticated, generating tokens...`);
   const payload = { sub: String(user.id), email: user.email, name: user.name ?? "" };
   const accessToken = signAccessToken(payload);
   const refreshToken = signRefreshToken(payload);
 
   setRefreshCookie(res, refreshToken);
-  console.log(`[INFO] User ${user.id} logged in. Refresh token cookie set.`);
+  console.log(`[INFO] ✅ User ${user.id} logged in successfully. Refresh token cookie set.`);
 
   return res.json({
     user: buildUserPayload(user),

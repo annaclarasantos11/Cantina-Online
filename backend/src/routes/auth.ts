@@ -53,14 +53,17 @@ function buildUserPayload(user: { id: number; name: string | null; email: string
 
 function setRefreshCookie(res: Response, token: string) {
   const isProduction = env.NODE_ENV === "production";
+  
   res.cookie("refresh_token", token, {
     httpOnly: true,
     secure: isProduction,
-    sameSite: isProduction ? "strict" : "none",
+    // Em development: lax (mais permissivo, funciona com localhost)
+    // Em production: strict (mais seguro)
+    sameSite: isProduction ? "strict" : "lax",
     maxAge: ttlToMs(env.REFRESH_TTL),
     path: "/",
   });
-  console.log(`[DEBUG] Cookie set - secure: ${isProduction}, sameSite: ${isProduction ? "strict" : "none"}`);
+  console.log(`[DEBUG] Cookie set - secure: ${isProduction}, sameSite: ${isProduction ? "strict" : "lax"}`);
 }
 
 router.post("/register", async (req: Request, res: Response) => {

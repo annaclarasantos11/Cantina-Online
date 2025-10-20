@@ -102,7 +102,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         res = await fetch(`${apiBase}/auth/me`, { headers: { Authorization: `Bearer ${nt}` }, credentials: "include", cache: "no-store" });
       } catch (err: any) {
         if (err?.status === 401) {
-          // refresh token inválido; mantenha dados locais para evitar logout abrupto
+          // refresh token inválido; fazer logout
+          console.log("[AUTH] Refresh token inválido, fazendo logout");
+          resetAuth();
           return;
         }
         return;
@@ -113,7 +115,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(data.user);
     const tokenToPersist = accessTokenRef.current;
     if (tokenToPersist) persistAuth({ user: data.user, accessToken: tokenToPersist }, "local");
-  }, [apiBase, persistAuth, refreshToken]);
+  }, [apiBase, persistAuth, refreshToken, resetAuth]);
 
   useEffect(() => {
     let active = true;

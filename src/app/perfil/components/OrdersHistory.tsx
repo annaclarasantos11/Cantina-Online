@@ -104,7 +104,7 @@ export function OrdersHistory({ userId }: OrdersHistoryProps) {
             <article key={order.id} className="rounded-2xl border border-gray-200 bg-white/95 p-5 shadow-sm">
               <div className="flex flex-wrap items-center justify-between gap-4">
                 <div className="text-sm font-medium text-gray-700">
-                  <span className="font-semibold text-gray-900">#{String(order.id).slice(-6)}</span>
+                  <span className="font-semibold text-gray-900">Pedido #{order.id}</span>
                   <span className="mx-2 text-gray-400">•</span>
                   <span>{formatDate(order.createdAt)}</span>
                 </div>

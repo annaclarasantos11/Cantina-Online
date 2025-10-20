@@ -5,6 +5,8 @@ import { Router } from "express";
 import { z } from "zod";
 import { env } from "../env";
 import { signAccessToken, signRefreshToken, verifyRefreshToken } from "../lib/jwt";
+import { generatePasswordResetToken, verifyPasswordResetToken, revokePasswordResetToken } from "../lib/passwordReset";
+import { sendPasswordResetEmail } from "../lib/email";
 import { prisma } from "../lib/prisma";
 import { requireAuth } from "../middlewares/auth";
 
@@ -50,13 +52,22 @@ function buildUserPayload(user: { id: number; name: string | null; email: string
 }
 
 function setRefreshCookie(res: Response, token: string) {
+  const isProduction = env.NODE_ENV === "production";
+  
+  console.log(`[DEBUG] Setting refresh cookie...`);
+  console.log(`[DEBUG] NODE_ENV: ${env.NODE_ENV}`);
+  console.log(`[DEBUG] secure: ${isProduction}`);
+  console.log(`[DEBUG] sameSite: ${isProduction ? "strict" : "lax"}`);
+  
   res.cookie("refresh_token", token, {
     httpOnly: true,
-    secure: env.NODE_ENV === "production",
-    sameSite: "lax",
+    secure: isProduction,
+    sameSite: isProduction ? "strict" : "lax",
     maxAge: ttlToMs(env.REFRESH_TTL),
     path: "/",
   });
+  
+  console.log(`[DEBUG] ✅ Refresh cookie configured`);
 }
 
 router.post("/register", async (req: Request, res: Response) => {
@@ -83,6 +94,7 @@ router.post("/register", async (req: Request, res: Response) => {
     const refreshToken = signRefreshToken(payload);
 
     setRefreshCookie(res, refreshToken);
+    console.log(`[INFO] User ${user.id} registered. Refresh token cookie set.`);
 
     return res.status(201).json({
       user: buildUserPayload(user),
@@ -97,30 +109,37 @@ router.post("/register", async (req: Request, res: Response) => {
 });
 
 router.post("/login", async (req: Request, res: Response) => {
+  console.log("[DEBUG] Login endpoint called");
   const result = loginSchema.safeParse(req.body);
   if (!result.success) {
+    console.log("[DEBUG] Invalid login payload");
     return res.status(400).json({ message: "Invalid payload", errors: result.error.flatten() });
   }
 
   const { email, password } = result.data;
+  console.log(`[DEBUG] Login attempt for email: ${email}`);
 
   const user = await prisma.user.findUnique({ where: { email } });
 
   if (!user) {
+    console.log(`[DEBUG] User not found: ${email}`);
     return res.status(401).json({ message: "Invalid credentials" });
   }
 
   const match = await bcrypt.compare(password, user.passwordHash);
 
   if (!match) {
+    console.log(`[DEBUG] Password mismatch for user: ${email}`);
     return res.status(401).json({ message: "Invalid credentials" });
   }
 
+  console.log(`[DEBUG] User ${user.id} authenticated, generating tokens...`);
   const payload = { sub: String(user.id), email: user.email, name: user.name ?? "" };
   const accessToken = signAccessToken(payload);
   const refreshToken = signRefreshToken(payload);
 
   setRefreshCookie(res, refreshToken);
+  console.log(`[INFO] ✅ User ${user.id} logged in successfully. Refresh token cookie set.`);
 
   return res.json({
     user: buildUserPayload(user),
@@ -131,27 +150,37 @@ router.post("/login", async (req: Request, res: Response) => {
 router.post("/refresh", async (req: Request, res: Response) => {
   const token = req.cookies?.["refresh_token"];
 
+  console.log("[DEBUG] Refresh endpoint called");
+  console.log("[DEBUG] Cookies received:", Object.keys(req.cookies || {}));
+  console.log("[DEBUG] Refresh token present:", !!token);
+
   if (!token) {
+    console.log("[DEBUG] Refresh token missing");
     return res.status(401).json({ message: "Refresh token missing" });
   }
 
   try {
     const payload = verifyRefreshToken(token);
+    console.log("[DEBUG] Refresh token verified. User ID:", payload.sub);
 
     const user = await prisma.user.findUnique({ where: { id: Number(payload.sub) } });
 
     if (!user) {
+      console.log("[DEBUG] User not found for ID:", payload.sub);
       return res.status(401).json({ message: "User not found" });
     }
 
-  const newPayload = { sub: String(user.id), email: user.email, name: user.name ?? "" };
+    console.log("[DEBUG] User found. Generating new tokens...");
+    const newPayload = { sub: String(user.id), email: user.email, name: user.name ?? "" };
     const accessToken = signAccessToken(newPayload);
     const refreshToken = signRefreshToken(newPayload);
 
     setRefreshCookie(res, refreshToken);
+    console.log("[DEBUG] New tokens generated and refresh cookie set");
 
     return res.json({ accessToken });
   } catch (error) {
+    console.error("[ERROR] Refresh token error:", error instanceof Error ? error.message : String(error));
     return res.status(401).json({ message: "Invalid or expired refresh token" });
   }
 });
@@ -232,6 +261,107 @@ router.put("/profile", requireAuth, async (req: Request, res: Response) => {
   } catch (error) {
     console.error("PUT /auth/profile error", error);
     return res.status(500).json({ message: "Erro ao atualizar perfil" });
+  }
+});
+
+router.post("/forgot-password", async (req: Request, res: Response) => {
+  try {
+    console.log("[DEBUG] /forgot-password endpoint called");
+    const { email } = (req.body ?? {}) as { email?: unknown };
+
+    if (typeof email !== "string" || !email.trim()) {
+      console.log("[DEBUG] E-mail inválido");
+      return res.status(400).json({ message: "E-mail é obrigatório" });
+    }
+
+    const emailNormalizado = email.trim().toLowerCase();
+    console.log(`[DEBUG] E-mail recebido: "${email}"`);
+    console.log(`[DEBUG] E-mail normalizado: "${emailNormalizado}"`);
+    
+    const user = await prisma.user.findUnique({ where: { email: emailNormalizado } });
+
+    // Não revela se o e-mail existe ou não (por segurança)
+    if (!user) {
+      console.log(`[DEBUG] ❌ Usuário não encontrado para: ${emailNormalizado}`);
+      console.log(`[DEBUG] Buscando todos os e-mails cadastrados...`);
+      const allUsers = await prisma.user.findMany({ select: { id: true, email: true } });
+      console.log(`[DEBUG] Total de usuários: ${allUsers.length}`);
+      allUsers.forEach((u, i) => console.log(`[DEBUG] Usuário ${i + 1}: ${u.email}`));
+      
+      return res.json({ message: "Se o e-mail existe, você receberá um link de recuperação." });
+    }
+
+    console.log(`[DEBUG] ✅ Usuário encontrado: ${user.id}`);
+    console.log(`[DEBUG] Gerando token de reset para usuário ${user.id}`);
+    const resetToken = await generatePasswordResetToken(user.id);
+    console.log(`[DEBUG] Token gerado: ${resetToken.substring(0, 10)}...`);
+    console.log(`[DEBUG] ⚠️ FULL TOKEN (para testes): ${resetToken}`);
+    
+    // Tentativa de envio por e-mail foi removida para permitir teste manual.
+    // Em produção você deve reabilitar o envio por e-mail.
+    console.log(`[DEBUG] Envio de e-mail desabilitado temporariamente. Token retornado no response (apenas em dev).`);
+
+    // Retorna o token no corpo da resposta para uso manual nos testes.
+    // NÃO deixe isso habilitado em produção — é apenas para ambientes de desenvolvimento.
+    return res.json({
+      message: "Se o e-mail existe, você receberá um link de recuperação.",
+      debug: {
+        resetToken,
+        expiresIn: "1 hour",
+      },
+    });
+  } catch (error) {
+    console.error("[ERROR] POST /auth/forgot-password error", error);
+    return res.status(500).json({ message: "Erro ao processar recuperação de senha" });
+  }
+});
+
+router.post("/reset-password", async (req: Request, res: Response) => {
+  try {
+    const { token, password } = (req.body ?? {}) as { token?: unknown; password?: unknown };
+
+    if (typeof token !== "string" || !token.trim()) {
+      return res.status(400).json({ message: "Token inválido" });
+    }
+
+    if (typeof password !== "string" || password.length < 8 || password.length > 128) {
+      return res.status(400).json({ message: "Senha deve ter entre 8 e 128 caracteres" });
+    }
+
+    const userId = await verifyPasswordResetToken(token.trim());
+    if (!userId) {
+      return res.status(401).json({ message: "Link de recuperação inválido ou expirado" });
+    }
+
+    const passwordHash = await bcrypt.hash(password, 12);
+
+    await prisma.user.update({
+      where: { id: userId },
+      data: { passwordHash },
+    });
+
+    await revokePasswordResetToken(token.trim());
+
+    return res.json({ message: "Senha atualizada com sucesso. Faça login novamente." });
+  } catch (error) {
+    console.error("POST /auth/reset-password error", error);
+    return res.status(500).json({ message: "Erro ao atualizar senha" });
+  }
+});
+
+router.get("/verify-reset-token", async (req: Request, res: Response) => {
+  try {
+    const { token } = req.query;
+
+    if (typeof token !== "string" || !token.trim()) {
+      return res.status(400).json({ valid: false });
+    }
+
+    const userId = await verifyPasswordResetToken(token.trim());
+    return res.json({ valid: userId !== null });
+  } catch (error) {
+    console.error("GET /auth/verify-reset-token error", error);
+    return res.status(500).json({ valid: false });
   }
 });
 

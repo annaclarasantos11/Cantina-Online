@@ -20,8 +20,8 @@ export default function PerfilPage() {
   if (initializing) {
     return (
       <section className="bg-gradient-to-b from-white via-orange-50/30 to-white">
-        <div className="container py-16">
-          <div className="rounded-3xl border border-gray-100 bg-white/80 px-6 py-16 text-center text-sm text-gray-600 shadow-sm">
+        <div className="container flex justify-center py-16">
+          <div className="w-full max-w-xl rounded-3xl border border-gray-100 bg-white/80 px-6 py-16 text-center text-sm text-gray-600 shadow-sm">
             Carregando suas informações...
           </div>
         </div>
@@ -33,8 +33,8 @@ export default function PerfilPage() {
 
   return (
     <section className="bg-gradient-to-b from-white via-orange-50/35 to-white">
-      <div className="container py-16">
-        <div className="max-w-3xl rounded-3xl border border-orange-100 bg-white/95 p-8 shadow-xl shadow-orange-100/50">
+      <div className="container flex justify-center py-16">
+        <div className="w-full max-w-3xl rounded-3xl border border-orange-100 bg-white/95 p-8 shadow-xl shadow-orange-100/50">
           <header className="flex flex-wrap items-center justify-between gap-4">
             <div className="flex items-center gap-3">
               <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-orange-50 text-orange-600">

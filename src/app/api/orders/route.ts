@@ -65,12 +65,13 @@ export async function GET(req: Request) {
 type Body = {
   name: string;
   note?: string;
+  userId: number;
   items: { productId: number; quantity: number }[];
 };
 
 export async function POST(req: Request) {
   const body = (await req.json()) as Body;
-  if (!body?.name || !Array.isArray(body?.items) || body.items.length === 0) {
+  if (!body?.name || !body?.userId || !Array.isArray(body?.items) || body.items.length === 0) {
     return NextResponse.json({ error: 'Dados inválidos' }, { status: 400 });
   }
 
@@ -107,6 +108,7 @@ export async function POST(req: Request) {
         data: {
           name: body.name,
           note: body.note ?? null,
+          user: { connect: { id: body.userId } },
           items: {
             create: products.map((product) => ({
               productId: product.id,
@@ -130,9 +132,7 @@ export async function POST(req: Request) {
         )
       );
 
-      const totalOrders = await tx.order.count();
-
-      return { id: order.id, number: totalOrders };
+      return { id: order.id, number: order.id };
     });
 
     return NextResponse.json({ orderId: result.id, orderNumber: result.number });

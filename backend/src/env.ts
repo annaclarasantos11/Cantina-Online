@@ -11,6 +11,8 @@ const envSchema = z.object({
   ACCESS_TTL: z.string().default("15m"),
   REFRESH_TTL: z.string().default("7d"),
   CORS_ORIGIN: z.string().min(1, "CORS_ORIGIN is required"),
+  FRONTEND_URL: z.string().default("http://localhost:3000"),
+  // Email providers disabled for manual-token flow
   PORT: z.coerce.number().default(4000)
 });
 

@@ -4,10 +4,12 @@ import Link from "next/link";
 import { useState } from "react";
 import { ClipboardList, Printer, ShoppingBag, Store } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
+import { useAuth } from "@/contexts/AuthContext";
 import { formatBRL } from "@/utils/currency";
 
 export default function CheckoutPage() {
   const { items, total, clear, increment, decrement, removeItem } = useCart();
+  const { user } = useAuth();
   const [name, setName] = useState("");
   const [note, setNote] = useState("");
   const [loading, setLoading] = useState(false);
@@ -73,6 +75,13 @@ export default function CheckoutPage() {
   async function submit() {
     setLoading(true);
     setError(null);
+
+    if (!user) {
+      setError("Você precisa estar logado para fazer um pedido");
+      setLoading(false);
+      return;
+    }
+
     const snapshot = items.map((i) => ({
       id: i.productId,
       produto: i.name,
@@ -88,6 +97,7 @@ export default function CheckoutPage() {
         body: JSON.stringify({
           name,
           note: note || undefined,
+          userId: user.id,
           items: items.map((i) => ({ productId: i.productId, quantity: i.quantity })),
         }),
       });

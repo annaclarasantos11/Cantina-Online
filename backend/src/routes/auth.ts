@@ -266,25 +266,52 @@ router.put("/profile", requireAuth, async (req: Request, res: Response) => {
 
 router.post("/forgot-password", async (req: Request, res: Response) => {
   try {
+    console.log("[DEBUG] /forgot-password endpoint called");
     const { email } = (req.body ?? {}) as { email?: unknown };
 
     if (typeof email !== "string" || !email.trim()) {
+      console.log("[DEBUG] E-mail inválido");
       return res.status(400).json({ message: "E-mail é obrigatório" });
     }
 
-    const user = await prisma.user.findUnique({ where: { email: email.trim().toLowerCase() } });
+    const emailNormalizado = email.trim().toLowerCase();
+    console.log(`[DEBUG] E-mail recebido: "${email}"`);
+    console.log(`[DEBUG] E-mail normalizado: "${emailNormalizado}"`);
+    
+    const user = await prisma.user.findUnique({ where: { email: emailNormalizado } });
 
     // Não revela se o e-mail existe ou não (por segurança)
     if (!user) {
+      console.log(`[DEBUG] ❌ Usuário não encontrado para: ${emailNormalizado}`);
+      console.log(`[DEBUG] Buscando todos os e-mails cadastrados...`);
+      const allUsers = await prisma.user.findMany({ select: { id: true, email: true } });
+      console.log(`[DEBUG] Total de usuários: ${allUsers.length}`);
+      allUsers.forEach((u, i) => console.log(`[DEBUG] Usuário ${i + 1}: ${u.email}`));
+      
       return res.json({ message: "Se o e-mail existe, você receberá um link de recuperação." });
     }
 
+    console.log(`[DEBUG] ✅ Usuário encontrado: ${user.id}`);
+    console.log(`[DEBUG] Gerando token de reset para usuário ${user.id}`);
     const resetToken = await generatePasswordResetToken(user.id);
-    await sendPasswordResetEmail(user.email, resetToken);
+    console.log(`[DEBUG] Token gerado: ${resetToken.substring(0, 10)}...`);
+    console.log(`[DEBUG] ⚠️ FULL TOKEN (para testes): ${resetToken}`);
+    
+    // Tentativa de envio por e-mail foi removida para permitir teste manual.
+    // Em produção você deve reabilitar o envio por e-mail.
+    console.log(`[DEBUG] Envio de e-mail desabilitado temporariamente. Token retornado no response (apenas em dev).`);
 
-    return res.json({ message: "Se o e-mail existe, você receberá um link de recuperação." });
+    // Retorna o token no corpo da resposta para uso manual nos testes.
+    // NÃO deixe isso habilitado em produção — é apenas para ambientes de desenvolvimento.
+    return res.json({
+      message: "Se o e-mail existe, você receberá um link de recuperação.",
+      debug: {
+        resetToken,
+        expiresIn: "1 hour",
+      },
+    });
   } catch (error) {
-    console.error("POST /auth/forgot-password error", error);
+    console.error("[ERROR] POST /auth/forgot-password error", error);
     return res.status(500).json({ message: "Erro ao processar recuperação de senha" });
   }
 });

@@ -1,6 +1,7 @@
 import { db } from "@/lib/prisma";
 import type { Prisma } from "@prisma/client";
 import { NextResponse } from "next/server";
+import { HAS_DB } from "@/env";
 
 export async function GET(req: Request) {
   try {
@@ -16,46 +17,56 @@ export async function GET(req: Request) {
       return NextResponse.json({ message: "userId inválido" }, { status: 400 });
     }
 
-    const orders = await db.order.findMany({
-      where: { userId } as Prisma.OrderWhereInput,
-      include: {
-        items: {
-          include: {
-            product: {
-              select: {
-                name: true,
-                price: true,
+    // [VERCEL] Fallback para mock quando HAS_DB === false.
+    // ATENÇÃO: código Prisma existente mantido abaixo.
+    if (HAS_DB) {
+      // --- CÓDIGO EXISTENTE (Prisma) MANTIDO ---
+      const orders = await db.order.findMany({
+        where: { userId } as Prisma.OrderWhereInput,
+        include: {
+          items: {
+            include: {
+              product: {
+                select: {
+                  name: true,
+                  price: true,
+                },
               },
             },
           },
         },
-      },
-      orderBy: { createdAt: "desc" },
-    });
+        orderBy: { createdAt: "desc" },
+      });
 
-    const payload = orders.map((order) => {
-      const items = order.items.map((it) => {
-        const unitPrice = Number(it.price ?? it.product?.price ?? 0);
-        const quantity = Number(it.quantity ?? 0);
-        const subtotal = unitPrice * quantity;
+      const payload = orders.map((order) => {
+        const items = order.items.map((it) => {
+          const unitPrice = Number(it.price ?? it.product?.price ?? 0);
+          const quantity = Number(it.quantity ?? 0);
+          const subtotal = unitPrice * quantity;
+          return {
+            id: it.id,
+            name: it.product?.name ?? "Produto",
+            quantity,
+            unitPrice,
+            subtotal,
+          };
+        });
+        const total = items.reduce((acc, item) => acc + item.subtotal, 0);
         return {
-          id: it.id,
-          name: it.product?.name ?? "Produto",
-          quantity,
-          unitPrice,
-          subtotal,
+          id: order.id,
+          createdAt: order.createdAt,
+          total,
+          items,
         };
       });
-      const total = items.reduce((acc, item) => acc + item.subtotal, 0);
-      return {
-        id: order.id,
-        createdAt: order.createdAt,
-        total,
-        items,
-      };
-    });
 
-    return NextResponse.json(payload, { status: 200 });
+      return NextResponse.json(payload, { status: 200 });
+      // -----------------------------------------
+    }
+
+    // [VERCEL] Sem DB → retorna mock (vazio)
+    const { orders } = await import("@/data/mock");
+    return NextResponse.json(orders, { status: 200 });
   } catch (error) {
     console.error("GET /api/orders error", error);
     return NextResponse.json({ message: "Erro ao listar pedidos" }, { status: 500 });
@@ -80,6 +91,11 @@ export async function POST(req: Request) {
     if (!it.productId || !Number.isInteger(it.quantity) || it.quantity <= 0) {
       return NextResponse.json({ error: 'Item inválido' }, { status: 400 });
     }
+  }
+
+  // [VERCEL] Sem DB, retorna erro indicando que o backend é necessário.
+  if (!HAS_DB) {
+    return NextResponse.json({ error: 'Criação de pedidos requer backend com banco de dados' }, { status: 503 });
   }
 
   try {

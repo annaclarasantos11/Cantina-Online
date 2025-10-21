@@ -94,6 +94,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (!res.ok) {
         if (res.status === 401) {
+          // 401 é esperado quando não há sessão - não é erro
           resetAuth();
         }
         return;
@@ -107,7 +108,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         persistUser(data.user, mode);
       }
     } catch (error) {
-      console.error("Erro ao renovar perfil:", error);
+      // Silencioso - conexão pode falhar temporariamente
+      // Não lançamos erro aqui
     }
   }, [persistUser, resetAuth]);
 
@@ -128,7 +130,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // Tenta validar sessão via cookie
         await refreshProfile();
       } catch (error) {
-        console.error("Erro ao inicializar auth:", error);
+        // Silencioso - erros durante inicialização são normais
       } finally {
         if (active) setInitializing(false);
       }

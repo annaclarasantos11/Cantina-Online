@@ -11,6 +11,8 @@
     "prisma:migrate": "prisma migrate dev --name init",
     "prisma:push": "prisma db push",
     "prisma:seed": "prisma db seed",
+    "seed": "node prisma/seed.js",
+    "postinstall": "prisma generate",
     "format": "prettier --write ."
   },
   "prisma": {

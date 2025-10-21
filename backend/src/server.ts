@@ -9,10 +9,23 @@ import { authRoutes } from "./routes/auth";
 
 const app = express();
 
+// [VERCEL] Proxy/HTTPS support
+app.set("trust proxy", 1);
+
+// [PRODUCTION] CORS configurado para backend em produção
 const origins = (env.CORS_ORIGIN || "").split(",").map(s => s.trim()).filter(Boolean);
-app.use(
-  cors({ origin: origins.length ? origins : ["http://localhost:3000", "http://127.0.0.1:3000"], credentials: true })
-);
+const corsOptions = {
+  origin: origins.length ? origins : [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    /\.vercel\.app$/  // permite previews da Vercel
+  ],
+  credentials: true,
+  allowedHeaders: ["Content-Type", "Authorization"],
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+};
+
+app.use(cors(corsOptions));
 app.use(express.json());
 app.use(cookieParser());
 app.use(morgan(env.NODE_ENV === "production" ? "combined" : "dev"));

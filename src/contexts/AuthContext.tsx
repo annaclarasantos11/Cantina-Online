@@ -75,9 +75,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const refreshToken = useCallback(async () => {
-    const res = await fetch(`${apiBase}/auth/refresh`, {
+    // [PRODUCTION] Use rewrite relativo /auth/refresh em produção
+    const refreshUrl = apiBase ? `${apiBase}/auth/refresh` : "/auth/refresh";
+    const res = await fetch(refreshUrl, {
       method: "POST",
-      credentials: "include",
+      credentials: "include",  // [IMPORTANTE] Permite cookies
       cache: "no-store",
     });
     if (!res.ok) {
@@ -149,38 +151,70 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [refreshToken, safeRefreshProfile, persistAuth, resetAuth]);
 
   const signIn = useCallback(async ({ email, password }: SignInInput): Promise<SignInResult> => {
-    const attempt = (url: string) => fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, credentials: "include", body: JSON.stringify({ email, password }) });
-    const urls = [`${apiBase}/auth/login`, "/auth/login"];
+    // [PRODUCTION] Em produção, use rewrite relativo /auth/login que aponta para backend
+    // Em dev sem backend, tenta ${apiBase}/auth/login (vazio, sem sucesso)
+    const urls = apiBase 
+      ? [`${apiBase}/auth/login`, "/auth/login"]  // backend remoto + fallback rewrite
+      : ["/auth/login"];                          // apenas rewrite local
+
     for (const url of urls) {
       try {
-        const res = await attempt(url);
+        const res = await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",  // [IMPORTANTE] Permite cookies
+          body: JSON.stringify({ email, password })
+        });
+
         const json = await res.json().catch(() => ({} as any));
-        if (!res.ok) { const message = typeof json?.message === "string" ? json.message : "Credenciais inválidas"; return { ok: false, message }; }
+        if (!res.ok) {
+          const message = typeof json?.message === "string" ? json.message : "Credenciais inválidas";
+          return { ok: false, message };
+        }
+
         let token: string | null = json?.accessToken ?? json?.access_token ?? json?.token ?? json?.data?.accessToken ?? null;
         let nextUser: AuthUser | null = (json?.user ?? json?.data?.user) || null;
-        if (!token) { try { token = await refreshToken(); } catch {} }
+
+        if (!token) {
+          try { token = await refreshToken(); } catch {}
+        }
+
         if (!nextUser && token) {
           try {
-            const me = await fetch(`${apiBase}/auth/me`, { headers: { Authorization: `Bearer ${token}` }, credentials: "include", cache: "no-store" });
-            if (me.ok) { const meJson = await me.json().catch(() => ({})); nextUser = meJson?.user ?? null; }
+            const meUrl = apiBase ? `${apiBase}/auth/me` : "/auth/me";
+            const me = await fetch(meUrl, {
+              headers: { Authorization: `Bearer ${token}` },
+              credentials: "include",
+              cache: "no-store"
+            });
+            if (me.ok) {
+              const meJson = await me.json().catch(() => ({}));
+              nextUser = meJson?.user ?? null;
+            }
           } catch {}
         }
+
         if (token) { setAccessToken(token); accessTokenRef.current = token; }
         if (nextUser) setUser(nextUser);
+
         if (token && nextUser) {
           const mode: PersistMode = "local";
           persistMode.current = mode;
           persistAuth({ user: nextUser, accessToken: token }, mode);
           return { ok: true };
         }
+
         return { ok: false, message: "Falha ao processar a resposta de login." };
       } catch { continue; }
     }
+
     return { ok: false, message: "Não foi possível conectar ao servidor." };
   }, [apiBase, persistAuth, refreshToken]);
 
   const signOut = useCallback(async () => {
-    try { await fetch(`${apiBase}/auth/logout`, { method: "POST", credentials: "include" }); } catch {}
+    // [PRODUCTION] Use rewrite relativo /auth/logout em produção
+    const logoutUrl = apiBase ? `${apiBase}/auth/logout` : "/auth/logout";
+    try { await fetch(logoutUrl, { method: "POST", credentials: "include" }); } catch {}
     resetAuth();
   }, [apiBase, resetAuth]);
 
@@ -189,13 +223,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (typeof name === "string" && name.trim()) payload.name = name.trim();
     if (typeof email === "string" && email.trim()) payload.email = email.trim();
 
-    const runRequest = async (tokenToUse: string) =>
-      fetch(`${apiBase}/auth/profile`, {
+    // [PRODUCTION] Use rewrite relativo /auth/profile em produção
+    const profileUrl = apiBase ? `${apiBase}/auth/profile` : "/auth/profile";
+
+    const runRequest = async (tokenToUse: string | null) => {
+      if (!tokenToUse) throw new Error("No token");
+      return fetch(profileUrl, {
         method: "PUT",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${tokenToUse}` },
         credentials: "include",
         body: JSON.stringify(payload),
       });
+    };
 
     const ensureToken = async (): Promise<string | null> => {
       if (accessTokenRef.current) return accessTokenRef.current;

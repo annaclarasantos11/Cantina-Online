@@ -1,5 +1,6 @@
 import { PrismaClient } from "@prisma/client";
 
+// [PRODUCTION] Singleton para evitar múltiplas instâncias do Prisma
 declare global {
   // eslint-disable-next-line no-var
   var prisma: PrismaClient | undefined;

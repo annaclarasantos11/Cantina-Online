@@ -29,9 +29,8 @@ export async function GET(req: Request) {
     }
 
     // --- SEU CÓDIGO EXISTENTE (Prisma) MANTIDO, APENAS RODARÁ QUANDO TIVER DB ---
-    const { db: dbInstance } = await import("@/lib/prisma");
-    const orders = await dbInstance.order.findMany({
-      where: { userId } as Prisma.OrderWhereInput,
+    const orders = await db.order.findMany({
+      where: { userId },
       include: {
         items: {
           include: {
@@ -47,8 +46,8 @@ export async function GET(req: Request) {
       orderBy: { createdAt: "desc" },
     });
 
-    const payload = orders.map((order) => {
-      const items = order.items.map((it) => {
+    const payload = orders.map((order: any) => {
+      const items = order.items.map((it: any) => {
         const unitPrice = Number(it.price ?? it.product?.price ?? 0);
         const quantity = Number(it.quantity ?? 0);
         const subtotal = unitPrice * quantity;
@@ -60,7 +59,7 @@ export async function GET(req: Request) {
           subtotal,
         };
       });
-      const total = items.reduce((acc, item) => acc + item.subtotal, 0);
+      const total = items.reduce((acc: number, item: any) => acc + item.subtotal, 0);
       return {
         id: order.id,
         createdAt: order.createdAt,
@@ -112,7 +111,7 @@ export async function POST(req: Request) {
       const products = await tx.product.findMany({ where: { id: { in: ids } } });
 
       if (products.length !== ids.length) {
-        const missing = ids.filter((id) => !products.some((p) => p.id === id));
+        const missing = ids.filter((id) => !products.some((p: any) => p.id === id));
         throw new Error(`Produto(s) não encontrados: ${missing.join(", ")}`);
       }
 
@@ -129,17 +128,17 @@ export async function POST(req: Request) {
           note: body.note ?? null,
           user: { connect: { id: body.userId } },
           items: {
-            create: products.map((product) => ({
+            create: products.map((product: any) => ({
               productId: product.id,
               quantity: aggregated.get(product.id) ?? 0,
-              price: product.price,
+              price: Number(product.price),
             })),
           },
         },
       });
 
       await Promise.all(
-        products.map((product) =>
+        products.map((product: any) =>
           tx.product.update({
             where: { id: product.id },
             data: {

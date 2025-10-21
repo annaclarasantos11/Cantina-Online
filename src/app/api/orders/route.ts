@@ -3,6 +3,11 @@ import type { Prisma } from "@prisma/client";
 import { NextResponse } from "next/server";
 import { HAS_DB } from "@/env";
 
+// [VERCEL] Evita prerender/export dessas rotas no build
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
@@ -17,56 +22,54 @@ export async function GET(req: Request) {
       return NextResponse.json({ message: "userId inválido" }, { status: 400 });
     }
 
-    // [VERCEL] Fallback para mock quando HAS_DB === false.
-    // ATENÇÃO: código Prisma existente mantido abaixo.
-    if (HAS_DB) {
-      // --- CÓDIGO EXISTENTE (Prisma) MANTIDO ---
-      const orders = await db.order.findMany({
-        where: { userId } as Prisma.OrderWhereInput,
-        include: {
-          items: {
-            include: {
-              product: {
-                select: {
-                  name: true,
-                  price: true,
-                },
+    // [VERCEL] Sem DATABASE_URL? Use mock para build/preview/produção sem banco
+    if (!process.env.DATABASE_URL) {
+      const { orders } = await import("@/data/mock");
+      return NextResponse.json(orders, { status: 200 });
+    }
+
+    // --- SEU CÓDIGO EXISTENTE (Prisma) MANTIDO, APENAS RODARÁ QUANDO TIVER DB ---
+    const { db: dbInstance } = await import("@/lib/prisma");
+    const orders = await dbInstance.order.findMany({
+      where: { userId } as Prisma.OrderWhereInput,
+      include: {
+        items: {
+          include: {
+            product: {
+              select: {
+                name: true,
+                price: true,
               },
             },
           },
         },
-        orderBy: { createdAt: "desc" },
-      });
+      },
+      orderBy: { createdAt: "desc" },
+    });
 
-      const payload = orders.map((order) => {
-        const items = order.items.map((it) => {
-          const unitPrice = Number(it.price ?? it.product?.price ?? 0);
-          const quantity = Number(it.quantity ?? 0);
-          const subtotal = unitPrice * quantity;
-          return {
-            id: it.id,
-            name: it.product?.name ?? "Produto",
-            quantity,
-            unitPrice,
-            subtotal,
-          };
-        });
-        const total = items.reduce((acc, item) => acc + item.subtotal, 0);
+    const payload = orders.map((order) => {
+      const items = order.items.map((it) => {
+        const unitPrice = Number(it.price ?? it.product?.price ?? 0);
+        const quantity = Number(it.quantity ?? 0);
+        const subtotal = unitPrice * quantity;
         return {
-          id: order.id,
-          createdAt: order.createdAt,
-          total,
-          items,
+          id: it.id,
+          name: it.product?.name ?? "Produto",
+          quantity,
+          unitPrice,
+          subtotal,
         };
       });
+      const total = items.reduce((acc, item) => acc + item.subtotal, 0);
+      return {
+        id: order.id,
+        createdAt: order.createdAt,
+        total,
+        items,
+      };
+    });
 
-      return NextResponse.json(payload, { status: 200 });
-      // -----------------------------------------
-    }
-
-    // [VERCEL] Sem DB → retorna mock (vazio)
-    const { orders } = await import("@/data/mock");
-    return NextResponse.json(orders, { status: 200 });
+    return NextResponse.json(payload, { status: 200 });
   } catch (error) {
     console.error("GET /api/orders error", error);
     return NextResponse.json({ message: "Erro ao listar pedidos" }, { status: 500 });

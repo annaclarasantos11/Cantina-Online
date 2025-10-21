@@ -23,11 +23,26 @@ function apiBase() {
 
 export const metadata = { title: "Menu | Cantina Online" };
 
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export default async function MenuPage() {
   const base = apiBase();
-  const res = await fetch(`${base}/api/products`, { cache: "no-store" });
-  if (!res.ok) throw new Error("Falha ao carregar produtos");
-  const products = (await res.json()) as Product[];
+  let products: Product[] = [];
+
+  try {
+    const res = await fetch(`${base}/api/products`, { cache: "no-store" });
+    if (!res.ok) {
+      console.error(`Falha ao carregar produtos: ${res.status}`);
+      // Continua com products = [] (fallback)
+    } else {
+      products = (await res.json()) as Product[];
+    }
+  } catch (error) {
+    console.error("Erro ao carregar produtos:", error);
+    // Continua com products = [] (fallback)
+  }
 
   return (
     <section className="relative isolate bg-gradient-to-b from-white via-orange-50/30 to-white">

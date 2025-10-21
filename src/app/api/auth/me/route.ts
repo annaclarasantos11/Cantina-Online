@@ -1,4 +1,5 @@
 // [VERCEL] Obter usuário atual baseado no cookie JWT
+// Retorna 200 sempre - deixa o frontend decidir a UI
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -8,20 +9,22 @@ import { cookies } from "next/headers";
 
 export async function GET() {
   try {
+    const cookieStore = await cookies();
+    const token = cookieStore.get("token")?.value;
+
+    // Sem token ou sem secret, retorna 200 com auth: false
+    if (!token || !process.env.JWT_SECRET) {
+      return NextResponse.json({
+        ok: false,
+        auth: false,
+        user: null,
+      });
+    }
+
     const [{ default: jwt }, { db }] = await Promise.all([
       import("jsonwebtoken"),
       import("@/lib/prisma"),
     ]);
-
-    const cookieStore = await cookies();
-    const token = cookieStore.get("token")?.value;
-
-    if (!token || !process.env.JWT_SECRET) {
-      return NextResponse.json(
-        { ok: false, user: null },
-        { status: 401 }
-      );
-    }
 
     let payload: { sub: string };
     try {
@@ -29,10 +32,12 @@ export async function GET() {
         sub: string;
       };
     } catch (error) {
-      return NextResponse.json(
-        { ok: false, user: null },
-        { status: 401 }
-      );
+      // Token inválido/expirado - ainda retorna 200
+      return NextResponse.json({
+        ok: false,
+        auth: false,
+        user: null,
+      });
     }
 
     const user = await db.user.findUnique({
@@ -41,21 +46,25 @@ export async function GET() {
     });
 
     if (!user) {
-      return NextResponse.json(
-        { ok: false, user: null },
-        { status: 401 }
-      );
+      return NextResponse.json({
+        ok: false,
+        auth: false,
+        user: null,
+      });
     }
 
     return NextResponse.json({
       ok: true,
+      auth: true,
       user,
     });
   } catch (error) {
     console.error("Erro ao obter usuário:", error);
-    return NextResponse.json(
-      { ok: false, user: null, message: "Erro ao obter usuário" },
-      { status: 500 }
-    );
+    // Erro no servidor - ainda retorna 200 com auth: false
+    return NextResponse.json({
+      ok: false,
+      auth: false,
+      user: null,
+    });
   }
 }

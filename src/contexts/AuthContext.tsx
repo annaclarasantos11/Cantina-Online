@@ -93,19 +93,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       });
 
       if (!res.ok) {
-        if (res.status === 401) {
-          // 401 é esperado quando não há sessão - não é erro
-          resetAuth();
-        }
+        // Agora /api/auth/me sempre retorna 200, então this shouldn't happen
+        // Mas se acontecer, limpamos a sessão
+        resetAuth();
         return;
       }
 
-      const data = (await res.json()) as { ok: boolean; user: AuthUser };
-      if (data.ok && data.user) {
+      const data = (await res.json()) as { ok: boolean; auth: boolean; user?: AuthUser };
+      
+      // Se auth é true e temos user, atualiza estado
+      if (data.auth && data.user) {
         setUser(data.user);
         userRef.current = data.user;
         const mode = persistMode.current ?? "local";
         persistUser(data.user, mode);
+      } else if (!data.auth) {
+        // Se auth é false, não há sessão ativa - limpa estado
+        resetAuth();
       }
     } catch (error) {
       // Silencioso - conexão pode falhar temporariamente

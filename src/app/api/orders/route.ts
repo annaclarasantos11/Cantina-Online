@@ -1,6 +1,12 @@
 import { db } from "@/lib/prisma";
 import type { Prisma } from "@prisma/client";
 import { NextResponse } from "next/server";
+import { HAS_DB } from "@/env";
+
+// [VERCEL] Evita prerender/export dessas rotas no build
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 export async function GET(req: Request) {
   try {
@@ -16,7 +22,15 @@ export async function GET(req: Request) {
       return NextResponse.json({ message: "userId inválido" }, { status: 400 });
     }
 
-    const orders = await db.order.findMany({
+    // [VERCEL] Sem DATABASE_URL? Use mock para build/preview/produção sem banco
+    if (!process.env.DATABASE_URL) {
+      const { orders } = await import("@/data/mock");
+      return NextResponse.json(orders, { status: 200 });
+    }
+
+    // --- SEU CÓDIGO EXISTENTE (Prisma) MANTIDO, APENAS RODARÁ QUANDO TIVER DB ---
+    const { db: dbInstance } = await import("@/lib/prisma");
+    const orders = await dbInstance.order.findMany({
       where: { userId } as Prisma.OrderWhereInput,
       include: {
         items: {
@@ -80,6 +94,11 @@ export async function POST(req: Request) {
     if (!it.productId || !Number.isInteger(it.quantity) || it.quantity <= 0) {
       return NextResponse.json({ error: 'Item inválido' }, { status: 400 });
     }
+  }
+
+  // [VERCEL] Sem DB, retorna erro indicando que o backend é necessário.
+  if (!HAS_DB) {
+    return NextResponse.json({ error: 'Criação de pedidos requer backend com banco de dados' }, { status: 503 });
   }
 
   try {

@@ -3,7 +3,7 @@
 import { FormEvent, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Lock } from "lucide-react";
-import { getApiBaseUrl } from "@/lib/api";
+import { api } from "@/lib/api";
 
 interface ResetPasswordClientProps {
   token: string;
@@ -11,7 +11,6 @@ interface ResetPasswordClientProps {
 
 export function ResetPasswordClient({ token }: ResetPasswordClientProps) {
   const router = useRouter();
-  const apiBase = useMemo(() => getApiBaseUrl(), []);
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -36,19 +35,10 @@ export function ResetPasswordClient({ token }: ResetPasswordClientProps) {
 
     setLoading(true);
     try {
-      const res = await fetch(`${apiBase}/auth/reset-password`, {
+      await api<unknown>("/auth/reset-password", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token, password }),
-        credentials: "include",
+        json: { token, password },
       });
-
-      const data = await res.json().catch(() => null);
-
-      if (!res.ok) {
-        const message = data?.message ?? "Não foi possível atualizar a senha.";
-        return setFeedback({ type: "error", message });
-      }
 
       setFeedback({
         type: "success",
@@ -61,7 +51,8 @@ export function ResetPasswordClient({ token }: ResetPasswordClientProps) {
       }, 2000);
     } catch (error) {
       console.error("Reset password erro", error);
-      setFeedback({ type: "error", message: "Ocorreu um erro inesperado." });
+      const message = error instanceof Error ? error.message : "Ocorreu um erro inesperado.";
+      setFeedback({ type: "error", message });
     } finally {
       setLoading(false);
     }

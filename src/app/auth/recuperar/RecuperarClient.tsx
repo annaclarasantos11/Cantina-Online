@@ -3,11 +3,10 @@
 import { FormEvent, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Mail } from "lucide-react";
-import { getApiBaseUrl } from "@/lib/api";
+import { api } from "@/lib/api";
 
 export function RecuperarClient() {
   const router = useRouter();
-  const apiBase = useMemo(() => getApiBaseUrl(), []);
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [feedback, setFeedback] = useState<{ type: "success" | "error"; message: string } | null>(null);
@@ -28,19 +27,10 @@ export function RecuperarClient() {
 
     setLoading(true);
     try {
-      const res = await fetch(`${apiBase}/auth/forgot-password`, {
+      await api<unknown>("/auth/forgot-password", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: email.trim().toLowerCase() }),
-        credentials: "include",
+        json: { email: email.trim().toLowerCase() },
       });
-
-      const data = await res.json().catch(() => null);
-
-      if (!res.ok) {
-        const message = data?.message ?? "Não foi possível enviar o link de recuperação.";
-        return setFeedback({ type: "error", message });
-      }
 
       setFeedback({
         type: "success",
@@ -54,7 +44,8 @@ export function RecuperarClient() {
       }, 3000);
     } catch (error) {
       console.error("Recuperar erro", error);
-      setFeedback({ type: "error", message: "Ocorreu um erro inesperado." });
+      const message = error instanceof Error ? error.message : "Ocorreu um erro inesperado.";
+      setFeedback({ type: "error", message });
     } finally {
       setLoading(false);
     }

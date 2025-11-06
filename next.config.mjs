@@ -1,7 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  experimental: { typedRoutes: true },
   async rewrites() {
     // [PRODUCTION] Rewrite para backend em produção
     const apiBase = process.env.NEXT_PUBLIC_API_URL;

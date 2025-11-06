@@ -1,11 +1,16 @@
-import { NextRequest, NextResponse } from "next/server";
-import { getApiBaseUrl } from "@/lib/api";
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
-function apiBaseIPv4() {
-  return getApiBaseUrl().replace("://localhost", "://127.0.0.1");
-}
+import { NextRequest, NextResponse } from "next/server";
+
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export async function POST(req: NextRequest) {
+  if (!process.env.DATABASE_URL) {
+    return NextResponse.json({ message: "Banco de dados não configurado" }, { status: 503 });
+  }
+
   let payload: any = {};
   try {
     payload = await req.json();
@@ -13,27 +18,45 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ message: "Invalid payload" }, { status: 400 });
   }
 
-  const url = `${apiBaseIPv4()}/auth/register`;
+  const name = String(payload?.name ?? "").trim();
+  const email = String(payload?.email ?? "").trim().toLowerCase();
+  const password = String(payload?.password ?? "");
+
+  if (name.length < 2) {
+    return NextResponse.json({ message: "Nome inválido" }, { status: 400 });
+  }
+  if (!EMAIL_REGEX.test(email)) {
+    return NextResponse.json({ message: "Email inválido" }, { status: 400 });
+  }
+  if (password.length < 8 || password.length > 128) {
+    return NextResponse.json({ message: "Senha inválida" }, { status: 400 });
+  }
 
   try {
-    const res = await fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
+    const [{ default: bcrypt }, { db }] = await Promise.all([
+      import("bcryptjs"),
+      import("@/lib/prisma"),
+    ]);
 
-    let data: any = null;
-    try { data = await res.json(); } catch {}
-
-    if (res.ok) {
-      console.log("[Next/api] Cadastro OK:", payload?.email, "->", url);
-      return NextResponse.json(data ?? { ok: true }, { status: res.status });
+    const existing = await db.user.findUnique({ where: { email } });
+    if (existing) {
+      return NextResponse.json({ message: "Email já cadastrado" }, { status: 409 });
     }
 
-    console.warn("[Next/api] Cadastro falhou:", data?.message || res.statusText, "status=", res.status, "url=", url);
-    return NextResponse.json(data ?? { message: "Erro ao cadastrar" }, { status: res.status });
-  } catch (err: any) {
-    console.error("[Next/api] Fetch para backend falhou:", err?.code || err?.message, "url=", url);
-    return NextResponse.json({ message: "API backend indisponível", target: url }, { status: 502 });
+    const passwordHash = await bcrypt.hash(password, 12);
+
+    const user = await db.user.create({
+      data: {
+        name,
+        email,
+        passwordHash,
+      },
+      select: { id: true, name: true, email: true },
+    });
+
+    return NextResponse.json({ ok: true, user }, { status: 201 });
+  } catch (error) {
+    console.error("[api/auth/register] erro:", error);
+    return NextResponse.json({ message: "Erro ao cadastrar" }, { status: 500 });
   }
 }

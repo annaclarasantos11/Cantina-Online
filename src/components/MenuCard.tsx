@@ -41,6 +41,7 @@ const PLACEHOLDER_SVG =
 function normalizeWebPath(p?: string) {
   if (!p || !p.trim()) return "";
   let s = p.replace("../public", "").replace(/^\.\//, "/");
+  s = s.replace(/^\/?public\//i, "/");
   if (!s.startsWith("/")) s = "/" + s;
   s = s.replace(/\/{2,}/g, "/");
   return s;

@@ -1,5 +1,8 @@
 "use client";
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 import { ArrowLeft } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { NovaSenhaClient } from "./NovaSenhaClient";

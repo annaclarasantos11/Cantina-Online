@@ -137,21 +137,19 @@ export async function POST(req: Request) {
         },
       });
 
-      await Promise.all(
-        products.map((product: any) =>
-          tx.product.update({
-            where: { id: product.id },
-            data: {
-              stock: {
-                decrement: aggregated.get(product.id) ?? 0,
-              },
+      for (const product of products) {
+        await tx.product.update({
+          where: { id: product.id },
+          data: {
+            stock: {
+              decrement: aggregated.get(product.id) ?? 0,
             },
-          })
-        )
-      );
+          },
+        });
+      }
 
       return { id: order.id, number: order.id };
-    });
+    }, { timeout: 15_000 });
 
     return NextResponse.json({ orderId: result.id, orderNumber: result.number });
   } catch (e: any) {

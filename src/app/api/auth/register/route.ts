@@ -2,6 +2,7 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
+import { Prisma } from "@prisma/client";
 import { NextRequest, NextResponse } from "next/server";
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -56,6 +57,9 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ ok: true, user }, { status: 201 });
   } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+      return NextResponse.json({ message: "Email já cadastrado" }, { status: 409 });
+    }
     console.error("[api/auth/register] erro:", error);
     return NextResponse.json({ message: "Erro ao cadastrar" }, { status: 500 });
   }

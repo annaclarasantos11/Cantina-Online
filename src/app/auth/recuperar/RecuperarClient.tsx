@@ -3,7 +3,6 @@
 import { FormEvent, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Mail } from "lucide-react";
-import { api } from "@/lib/api";
 
 export function RecuperarClient() {
   const router = useRouter();
@@ -26,29 +25,11 @@ export function RecuperarClient() {
     }
 
     setLoading(true);
-    try {
-      await api<unknown>("/auth/forgot-password", {
-        method: "POST",
-        json: { email: email.trim().toLowerCase() },
-      });
 
-      setFeedback({
-        type: "success",
-        message: `Link de recuperação enviado! Verifique seu e-mail (${email}).`,
-      });
-      setEmail("");
-
-      // Redireciona para login após 3 segundos
-      setTimeout(() => {
-        router.push("/auth/login");
-      }, 3000);
-    } catch (error) {
-      console.error("Recuperar erro", error);
-      const message = error instanceof Error ? error.message : "Ocorreu um erro inesperado.";
-      setFeedback({ type: "error", message });
-    } finally {
-      setLoading(false);
-    }
+    const normalizedEmail = email.trim().toLowerCase();
+    const params = new URLSearchParams({ email: normalizedEmail });
+    router.push(`/auth/recuperar/nova-senha?${params.toString()}`);
+    setLoading(false);
   };
 
   return (
@@ -86,7 +67,7 @@ export function RecuperarClient() {
         disabled={loading || !isValidEmail}
         className="w-full rounded-full border border-orange-500 bg-gradient-to-r from-orange-500 to-orange-600 px-4 py-3 text-base font-semibold text-white shadow-[0_18px_28px_-18px_rgba(249,115,22,0.65)] outline-none transition hover:shadow-[0_22px_32px_-18px_rgba(234,88,12,0.7)] disabled:cursor-not-allowed disabled:border-gray-200 disabled:bg-gray-200 disabled:shadow-none disabled:text-gray-500"
       >
-        {loading ? "Enviando..." : "Enviar link de recuperação"}
+        {loading ? "Carregando..." : "Próximo"}
       </button>
     </form>
   );

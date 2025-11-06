@@ -1,11 +1,10 @@
 "use client";
 
-import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
-import { RecuperarClient } from "./RecuperarClient";
+import { useRouter } from "next/navigation";
+import { NovaSenhaClient } from "./NovaSenhaClient";
 
-export default function RecuperarPage() {
+export default function NovaSenhaPage() {
   const router = useRouter();
 
   return (
@@ -22,22 +21,13 @@ export default function RecuperarPage() {
           </button>
 
           <div className="space-y-2">
-            <h1 className="text-3xl font-bold tracking-tight text-gray-900">Recuperar acesso</h1>
-            <p className="text-sm text-gray-600">
-              Digite seu e-mail para continuar o processo de redefinição de senha.
-            </p>
+            <h1 className="text-3xl font-bold tracking-tight text-gray-900">Definir nova senha</h1>
+            <p className="text-sm text-gray-600">Crie uma nova senha para acessar sua conta.</p>
           </div>
 
           <div className="mt-8 rounded-3xl border border-orange-100/60 bg-white/95 p-8 shadow-xl shadow-orange-100/40">
-            <RecuperarClient />
+            <NovaSenhaClient />
           </div>
-
-          <p className="mt-6 text-center text-sm text-gray-600">
-            Lembrou sua senha?{" "}
-            <Link href="/auth/login" className="font-semibold text-orange-700 hover:underline">
-              Voltar ao login
-            </Link>
-          </p>
         </div>
       </div>
     </section>

@@ -1,6 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  images: { unoptimized: true },
   async rewrites() {
     // [PRODUCTION] Rewrite para backend em produção
     const apiBase = process.env.NEXT_PUBLIC_API_URL;
